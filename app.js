@@ -64,28 +64,28 @@ function initEventListeners() {
     registerBtn.addEventListener('click', () => openModal(registerModal));
     logoutBtn.addEventListener('click', handleLogout);
     publicLoginBtn.addEventListener('click', () => openModal(loginModal));
-    
+
     // Formularios
     loginForm.addEventListener('submit', handleLogin);
     registerForm.addEventListener('submit', handleRegister);
     appointmentForm.addEventListener('submit', handleAppointmentSubmit);
     exceptionForm.addEventListener('submit', handleExceptionSubmit);
-    
+
     // Botones de acción
     newAppointmentBtn.addEventListener('click', () => openModal(appointmentModal));
     addExceptionBtn.addEventListener('click', () => openModal(exceptionModal));
     saveDurationBtn.addEventListener('click', saveSessionDuration);
-    
+
     // Tabs de administración
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => switchTab(e.target.dataset.tab));
     });
-    
+
     // Cerrar modales
     document.querySelectorAll('.close').forEach(closeBtn => {
         closeBtn.addEventListener('click', () => closeAllModals());
     });
-    
+
     // Cerrar modal al hacer clic fuera
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -94,13 +94,13 @@ function initEventListeners() {
             }
         });
     });
-    
+
     // Cambio de tipo de excepción
     exceptionType.addEventListener('change', toggleModifiedHours);
-    
+
     // Cambio de fecha en formulario de cita
     appointmentDate.addEventListener('change', loadAvailableTimes);
-    
+
     // Confirmación modal
     confirmationOk.addEventListener('click', () => closeModal(confirmationModal));
 }
@@ -108,7 +108,7 @@ function initEventListeners() {
 // Verificar estado de autenticación
 async function checkAuthState() {
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (session) {
         currentUser = session.user;
         await getUserRole();
@@ -125,7 +125,7 @@ async function getUserRole() {
         .select('role')
         .eq('id', currentUser.id)
         .single();
-    
+
     if (error) {
         console.error('Error al obtener rol:', error);
         userRole = 'patient'; // Por defecto
@@ -150,7 +150,7 @@ function showUserView() {
     logoutBtn.classList.remove('hidden');
     loginBtn.classList.add('hidden');
     registerBtn.classList.add('hidden');
-    
+
     if (userRole === 'admin') {
         patientView.classList.add('hidden');
         adminView.classList.remove('hidden');
@@ -165,22 +165,22 @@ function showUserView() {
 // Manejo de login
 async function handleLogin(e) {
     e.preventDefault();
-    
+
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     const message = document.getElementById('loginMessage');
-    
+
     // Mostrar estado de carga
     const submitBtn = loginForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando sesión...';
     submitBtn.disabled = true;
-    
+
     const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
     });
-    
+
     if (error) {
         message.textContent = error.message;
         message.className = 'message error';
@@ -197,18 +197,18 @@ async function handleLogin(e) {
 // Manejo de registro
 async function handleRegister(e) {
     e.preventDefault();
-    
+
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
     const message = document.getElementById('registerMessage');
-    
+
     // Mostrar estado de carga
     const submitBtn = registerForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
     submitBtn.disabled = true;
-    
+
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -218,7 +218,7 @@ async function handleRegister(e) {
             }
         }
     });
-    
+
     if (error) {
         message.textContent = error.message;
         message.className = 'message error';
@@ -227,7 +227,7 @@ async function handleRegister(e) {
     } else {
         message.textContent = 'Registro exitoso. Por favor, verifica tu correo electrónico.';
         message.className = 'message success';
-        
+
         // Crear perfil de usuario
         if (data.user) {
             await supabase
@@ -236,7 +236,7 @@ async function handleRegister(e) {
                     { id: data.user.id, name: name, role: 'patient' }
                 ]);
         }
-        
+
         setTimeout(() => {
             closeAllModals();
         }, 2000);
@@ -261,21 +261,21 @@ async function loadPatientAppointments() {
             <p>Cargando tus citas...</p>
         </div>
     `;
-    
+
     const { data, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('patient_id', currentUser.id)
         .order('appointment_date', { ascending: true });
-    
+
     if (error) {
         console.error('Error al cargar citas:', error);
         patientAppointments.innerHTML = '<p class="message error">Error al cargar las citas. Intenta nuevamente.</p>';
         return;
     }
-    
+
     patientAppointments.innerHTML = '';
-    
+
     if (data.length === 0) {
         patientAppointments.innerHTML = `
             <div class="empty-state">
@@ -286,7 +286,7 @@ async function loadPatientAppointments() {
         `;
         return;
     }
-    
+
     data.forEach(appointment => {
         const appointmentCard = createAppointmentCard(appointment, false);
         patientAppointments.appendChild(appointmentCard);
@@ -310,7 +310,7 @@ async function loadAllAppointments() {
             <p>Cargando reservas...</p>
         </div>
     `;
-    
+
     const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -318,15 +318,15 @@ async function loadAllAppointments() {
             profiles:patient_id (name, email)
         `)
         .order('appointment_date', { ascending: true });
-    
+
     if (error) {
         console.error('Error al cargar citas:', error);
         adminAppointments.innerHTML = '<p class="message error">Error al cargar las reservas. Intenta nuevamente.</p>';
         return;
     }
-    
+
     adminAppointments.innerHTML = '';
-    
+
     if (data.length === 0) {
         adminAppointments.innerHTML = `
             <div class="empty-state">
@@ -337,7 +337,7 @@ async function loadAllAppointments() {
         `;
         return;
     }
-    
+
     data.forEach(appointment => {
         const appointmentCard = createAppointmentCard(appointment, true);
         adminAppointments.appendChild(appointmentCard);
@@ -346,21 +346,21 @@ async function loadAllAppointments() {
 
 // Crear tarjeta de cita
 function createAppointmentCard(appointment, isAdmin) {
-  const card = document.createElement('div');
-  card.className = 'appointment-card';
+    const card = document.createElement('div');
+    card.className = 'appointment-card';
 
-  const date = new Date(appointment.appointment_date);
-  const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  const formattedTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(appointment.appointment_date);
+    const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const formattedTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-  let statusIcon = '';
-  if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
-  if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
-  if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
+    let statusIcon = '';
+    if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
+    if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
+    if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
 
-  const showConfirm = isAdmin && appointment.status !== 'confirmed';
+    const showConfirm = isAdmin && appointment.status !== 'confirmed';
 
-  card.innerHTML = `
+    card.innerHTML = `
     <div class="appointment-info">
       <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? appointment.profiles.name : 'Nutricionista'}</h4>
       <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
@@ -371,21 +371,22 @@ function createAppointmentCard(appointment, isAdmin) {
     <div class="appointment-actions">
       ${isAdmin ? `
         ${showConfirm ? `
-          <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
+            <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
             <i class="fas fa-check"></i> Confirmar
-          </button>` : ``}
+            </button>` : ``}
         <button class="btn btn-secondary" onclick="updateAppointmentStatus('${appointment.id}', 'cancelled')">
-          <i class="fas fa-times"></i> Cancelar
+            <i class="fas fa-times"></i> Cancelar
         </button>
-      ` : `
-        <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
-          <i class="fas fa-times"></i> Cancelar Cita
-        </button>
-      `}
+        ` : `
+        ${appointment.status !== 'cancelled' ? `
+            <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
+            <i class="fas fa-times"></i> Cancelar Cita
+            </button>` : ``}
+        `}
     </div>
   `;
 
-  return card;
+    return card;
 }
 
 // Cargar horario semanal
@@ -397,42 +398,42 @@ async function loadWeeklySchedule() {
             <p>Cargando horarios...</p>
         </div>
     `;
-    
+
     const { data, error } = await supabase
         .from('business_hours')
         .select('*')
         .order('day_of_week');
-    
+
     if (error) {
         console.error('Error al cargar horario:', error);
         weeklySchedule.innerHTML = '<p class="message error">Error al cargar el horario. Intenta nuevamente.</p>';
         return;
     }
-    
+
     weeklySchedule.innerHTML = '';
-    
+
     const days = [
-        'Domingo', 'Lunes', 'Martes', 'Miércoles', 
+        'Domingo', 'Lunes', 'Martes', 'Miércoles',
         'Jueves', 'Viernes', 'Sábado'
     ];
-    
+
     days.forEach((day, index) => {
         const daySchedule = data.find(schedule => schedule.day_of_week === index);
-        
+
         const dayCard = document.createElement('div');
         dayCard.className = 'day-schedule';
-        
+
         // Icono según si está activo o no
-        const statusIcon = daySchedule && daySchedule.active ? 
-            '<i class="fas fa-check-circle" style="color: var(--success);"></i>' : 
+        const statusIcon = daySchedule && daySchedule.active ?
+            '<i class="fas fa-check-circle" style="color: var(--success);"></i>' :
             '<i class="fas fa-times-circle" style="color: var(--error);"></i>';
-        
+
         dayCard.innerHTML = `
             <div class="day-info">
                 <h4>${day}</h4>
-                <p>${daySchedule && daySchedule.active ? 
-                    `Horario: ${formatTime(daySchedule.start_time)} - ${formatTime(daySchedule.end_time)}` : 
-                    'Sin atención'}</p>
+                <p>${daySchedule && daySchedule.active ?
+                `Horario: ${formatTime(daySchedule.start_time)} - ${formatTime(daySchedule.end_time)}` :
+                'Sin atención'}</p>
             </div>
             <div class="day-actions">
                 <span>${statusIcon}</span>
@@ -441,7 +442,7 @@ async function loadWeeklySchedule() {
                 </button>
             </div>
         `;
-        
+
         weeklySchedule.appendChild(dayCard);
     });
 }
@@ -453,7 +454,7 @@ async function loadSessionDuration() {
         .select('*')
         .eq('key', 'session_duration')
         .single();
-    
+
     if (!error && data) {
         sessionDuration.value = data.value;
     }
@@ -462,19 +463,19 @@ async function loadSessionDuration() {
 // Guardar duración de sesión
 async function saveSessionDuration() {
     const duration = parseInt(sessionDuration.value);
-    
+
     // Validar duración
     if (duration < 15 || duration > 180) {
         showConfirmation('La duración debe estar entre 15 y 180 minutos', 'error');
         return;
     }
-    
+
     const { error } = await supabase
         .from('settings')
         .upsert([
             { key: 'session_duration', value: duration }
         ]);
-    
+
     if (error) {
         console.error('Error al guardar duración:', error);
         showConfirmation('Error al guardar la duración de sesión', 'error');
@@ -492,20 +493,20 @@ async function loadExceptions() {
             <p>Cargando excepciones...</p>
         </div>
     `;
-    
+
     const { data, error } = await supabase
         .from('schedule_exceptions')
         .select('*')
         .order('exception_date', { ascending: true });
-    
+
     if (error) {
         console.error('Error al cargar excepciones:', error);
         exceptionsList.innerHTML = '<p class="message error">Error al cargar las excepciones. Intenta nuevamente.</p>';
         return;
     }
-    
+
     exceptionsList.innerHTML = '';
-    
+
     if (data.length === 0) {
         exceptionsList.innerHTML = `
             <div class="empty-state">
@@ -516,31 +517,31 @@ async function loadExceptions() {
         `;
         return;
     }
-    
+
     data.forEach(exception => {
         const exceptionCard = document.createElement('div');
         exceptionCard.className = 'exception-card';
-        
+
         const date = new Date(exception.exception_date);
-        const formattedDate = date.toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        const formattedDate = date.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
         });
-        
+
         // Icono según tipo
-        const typeIcon = exception.exception_type === 'closed' ? 
-            '<i class="fas fa-ban"></i>' : 
+        const typeIcon = exception.exception_type === 'closed' ?
+            '<i class="fas fa-ban"></i>' :
             '<i class="fas fa-clock"></i>';
-        
+
         exceptionCard.innerHTML = `
             <div class="exception-info">
                 <h4>${typeIcon} ${formattedDate}</h4>
                 <p><i class="fas fa-comment"></i> ${exception.reason}</p>
-                <p>${exception.exception_type === 'closed' ? 
-                    '<i class="fas fa-times"></i> Día sin atención' : 
-                    `<i class="fas fa-clock"></i> Horario modificado: ${formatTime(exception.start_time)} - ${formatTime(exception.end_time)}`}</p>
+                <p>${exception.exception_type === 'closed' ?
+                '<i class="fas fa-times"></i> Día sin atención' :
+                `<i class="fas fa-clock"></i> Horario modificado: ${formatTime(exception.start_time)} - ${formatTime(exception.end_time)}`}</p>
             </div>
             <div class="exception-actions">
                 <button class="btn btn-secondary" onclick="deleteException('${exception.id}')">
@@ -548,7 +549,7 @@ async function loadExceptions() {
                 </button>
             </div>
         `;
-        
+
         exceptionsList.appendChild(exceptionCard);
     });
 }
@@ -556,24 +557,24 @@ async function loadExceptions() {
 // Manejar envío de formulario de cita
 async function handleAppointmentSubmit(e) {
     e.preventDefault();
-    
+
     const date = appointmentDate.value;
     const time = appointmentTime.value;
     const notes = document.getElementById('appointmentNotes').value;
-    
+
     if (!date || !time) {
         showAppointmentMessage('Por favor, selecciona fecha y hora', 'error');
         return;
     }
-    
+
     const appointmentDateTime = new Date(`${date}T${time}`);
-    
+
     // Mostrar estado de carga
     const submitBtn = appointmentForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Programando cita...';
     submitBtn.disabled = true;
-    
+
     const { error } = await supabase
         .from('appointments')
         .insert([
@@ -584,7 +585,7 @@ async function handleAppointmentSubmit(e) {
                 status: 'pending'
             }
         ]);
-    
+
     if (error) {
         console.error('Error al crear cita:', error);
         showAppointmentMessage('Error al crear la cita', 'error');
@@ -592,10 +593,10 @@ async function handleAppointmentSubmit(e) {
         submitBtn.disabled = false;
     } else {
         showAppointmentMessage('Cita solicitada correctamente. Te notificaremos por correo cuando sea confirmada.', 'success');
-        
+
         // Enviar correo de confirmación (simulado)
         sendConfirmationEmail(currentUser.email, appointmentDateTime);
-        
+
         setTimeout(() => {
             closeModal(appointmentModal);
             if (userRole === 'admin') {
@@ -610,30 +611,30 @@ async function handleAppointmentSubmit(e) {
 // Manejar envío de formulario de excepción
 async function handleExceptionSubmit(e) {
     e.preventDefault();
-    
+
     const date = document.getElementById('exceptionDate').value;
     const type = exceptionType.value;
     const reason = document.getElementById('exceptionReason').value;
-    
+
     let startTime = null;
     let endTime = null;
-    
+
     if (type === 'modified') {
         startTime = document.getElementById('exceptionStartTime').value;
         endTime = document.getElementById('exceptionEndTime').value;
-        
+
         if (!startTime || !endTime) {
             showExceptionMessage('Por favor, ingresa horario de inicio y fin', 'error');
             return;
         }
     }
-    
+
     // Mostrar estado de carga
     const submitBtn = exceptionForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando excepción...';
     submitBtn.disabled = true;
-    
+
     const { error } = await supabase
         .from('schedule_exceptions')
         .insert([
@@ -645,7 +646,7 @@ async function handleExceptionSubmit(e) {
                 end_time: endTime
             }
         ]);
-    
+
     if (error) {
         console.error('Error al crear excepción:', error);
         showExceptionMessage('Error al crear la excepción', 'error');
@@ -653,7 +654,7 @@ async function handleExceptionSubmit(e) {
         submitBtn.disabled = false;
     } else {
         showExceptionMessage('Excepción agregada correctamente', 'success');
-        
+
         setTimeout(() => {
             closeModal(exceptionModal);
             loadExceptions();
@@ -664,67 +665,67 @@ async function handleExceptionSubmit(e) {
 // Cargar horarios disponibles
 async function loadAvailableTimes() {
     const date = appointmentDate.value;
-    
+
     if (!date) return;
-    
+
     // Mostrar estado de carga
     appointmentTime.innerHTML = '<option value="">Cargando horarios disponibles...</option>';
-    
+
     // Obtener duración de sesión
     const { data: settings } = await supabase
         .from('settings')
         .select('*')
         .eq('key', 'session_duration')
         .single();
-    
+
     const sessionDuration = settings ? parseInt(settings.value) : 60;
-    
+
     // Obtener horario del día
     const selectedDate = new Date(date);
     const dayOfWeek = selectedDate.getDay();
-    
+
     const { data: businessHours } = await supabase
         .from('business_hours')
         .select('*')
         .eq('day_of_week', dayOfWeek)
         .eq('active', true)
         .single();
-    
+
     if (!businessHours) {
         appointmentTime.innerHTML = '<option value="">No hay horarios disponibles este día</option>';
         return;
     }
-    
+
     // Obtener excepciones
     const { data: exceptions } = await supabase
         .from('schedule_exceptions')
         .select('*')
         .eq('exception_date', date);
-    
+
     // Obtener citas existentes
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
-    
+
     const { data: existingAppointments } = await supabase
         .from('appointments')
         .select('appointment_date')
         .gte('appointment_date', startOfDay.toISOString())
         .lte('appointment_date', endOfDay.toISOString())
         .neq('status', 'cancelled');
-    
+
     // Generar horarios disponibles
     appointmentTime.innerHTML = '';
-    
+
     let startTime = businessHours.start_time;
     let endTime = businessHours.end_time;
-    
+
     // Verificar si hay excepción
     if (exceptions && exceptions.length > 0) {
         const exception = exceptions[0];
-        
+
         if (exception.exception_type === 'closed') {
             appointmentTime.innerHTML = '<option value="">No hay atención este día</option>';
             return;
@@ -733,23 +734,23 @@ async function loadAvailableTimes() {
             endTime = exception.end_time;
         }
     }
-    
+
     // Convertir tiempos a minutos
     const startMinutes = timeToMinutes(startTime);
     const endMinutes = timeToMinutes(endTime);
-    
+
     // Generar slots
     let availableSlots = 0;
     for (let time = startMinutes; time <= endMinutes - sessionDuration; time += sessionDuration) {
         const timeString = minutesToTime(time);
         const slotDateTime = new Date(`${date}T${timeString}`);
-        
+
         // Verificar si el slot está ocupado
         const isOccupied = existingAppointments && existingAppointments.some(apt => {
             const aptTime = new Date(apt.appointment_date).getTime();
             return Math.abs(aptTime - slotDateTime.getTime()) < sessionDuration * 60 * 1000;
         });
-        
+
         if (!isOccupied) {
             const option = document.createElement('option');
             option.value = timeString;
@@ -758,7 +759,7 @@ async function loadAvailableTimes() {
             availableSlots++;
         }
     }
-    
+
     if (availableSlots === 0) {
         appointmentTime.innerHTML = '<option value="">No hay horarios disponibles</option>';
     }
@@ -770,25 +771,25 @@ async function updateAppointmentStatus(appointmentId, status) {
         .from('appointments')
         .update({ status: status })
         .eq('id', appointmentId);
-    
+
     if (error) {
         console.error('Error al actualizar cita:', error);
         showConfirmation('Error al actualizar la cita', 'error');
     } else {
         const statusText = getStatusText(status);
         showConfirmation(`Cita ${statusText.toLowerCase()} correctamente`);
-        
+
         // Enviar correo de notificación (simulado)
         const { data: appointment } = await supabase
             .from('appointments')
             .select('profiles:patient_id (email), appointment_date')
             .eq('id', appointmentId)
             .single();
-        
+
         if (appointment && appointment.profiles) {
             sendStatusEmail(appointment.profiles.email, status, new Date(appointment.appointment_date));
         }
-        
+
         loadAllAppointments();
     }
 }
@@ -800,7 +801,7 @@ async function cancelAppointment(appointmentId) {
         .update({ status: 'cancelled' })
         .eq('id', appointmentId)
         .eq('patient_id', currentUser.id);
-    
+
     if (error) {
         console.error('Error al cancelar cita:', error);
         showConfirmation('Error al cancelar la cita', 'error');
@@ -816,7 +817,7 @@ async function deleteException(exceptionId) {
         .from('schedule_exceptions')
         .delete()
         .eq('id', exceptionId);
-    
+
     if (error) {
         console.error('Error al eliminar excepción:', error);
         showConfirmation('Error al eliminar la excepción', 'error');
@@ -849,7 +850,7 @@ function switchTab(tabName) {
         btn.classList.remove('active');
     });
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-    
+
     // Actualizar contenido de tabs
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
@@ -869,11 +870,11 @@ function setupDateRestrictions() {
     const today = new Date();
     const minDate = today.toISOString().split('T')[0];
     appointmentDate.min = minDate;
-    
+
     const maxDate = new Date();
     maxDate.setMonth(today.getMonth() + 3);
     appointmentDate.max = maxDate.toISOString().split('T')[0];
-    
+
     document.getElementById('exceptionDate').min = minDate;
 }
 
@@ -921,10 +922,45 @@ function minutesToTime(minutes) {
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-// Funciones simuladas para envío de correos
-function sendConfirmationEmail(email, appointmentDate) {
-    console.log(`Correo de confirmación enviado a ${email} para la cita del ${appointmentDate}`);
-    // En una implementación real, aquí se integraría con un servicio de correo
+// ==== EmailJS: init ÚNICA y correcta ====
+(function initEmailJS() {
+  try {
+    if (typeof emailjs === "undefined") {
+      console.error("[EmailJS] SDK no cargado. Revisa el <script> en index.html.");
+      return;
+    }
+    emailjs.init({ publicKey: "aE1WHrElpbOsKODgc" });
+    console.log("[EmailJS] init OK", emailjs.version);
+  } catch (e) {
+    console.error("[EmailJS] init FAIL:", e);
+  }
+})();
+
+async function sendConfirmationEmail(toEmail, appointmentDateTime) {
+  const formatted = appointmentDateTime.toLocaleString("es-CL", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
+
+  const params = {
+    // IMPORTANTES: que coincidan con el template
+    title: "Confirmación de cita",
+    user_name: currentUser?.user_metadata?.name || "Paciente",
+    clinic_name: "Nutrisalud",
+    appointment_datetime: formatted,
+    clinic_address: "Calle Principal 123, Ciudad, País",
+    cta_url: window.location.origin,
+    support_email: "equipontek@gmail.com",
+    name: currentUser?.user_metadata?.name || "Paciente",
+    email: toEmail,                 // <-- el template usa {{email}} en el "To:"
+  };
+
+  try {
+    const r = await emailjs.send("service_vkcr10n", "template_0vxcwod", params);
+    console.log("EmailJS OK", r);
+  } catch (e) {
+    console.error("EmailJS FAIL", e);
+  }
 }
 
 function sendStatusEmail(email, status, appointmentDate) {
@@ -943,7 +979,7 @@ async function initializeDatabase() {
     const { data: existingHours } = await supabase
         .from('business_hours')
         .select('*');
-    
+
     if (!existingHours || existingHours.length === 0) {
         // Crear horario por defecto (Lunes a Viernes, 9:00-18:00)
         const defaultHours = [];
@@ -955,18 +991,18 @@ async function initializeDatabase() {
                 active: true
             });
         }
-        
+
         await supabase
             .from('business_hours')
             .insert(defaultHours);
     }
-    
+
     // Verificar configuración de duración de sesión
     const { data: existingDuration } = await supabase
         .from('settings')
         .select('*')
         .eq('key', 'session_duration');
-    
+
     if (!existingDuration || existingDuration.length === 0) {
         await supabase
             .from('settings')
@@ -1010,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactForm) {
         contactForm.addEventListener('submit', handleContactSubmit);
     }
-    
+
     // Añadir funcionalidad de filtros para citas del paciente
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1024,18 +1060,18 @@ document.addEventListener('DOMContentLoaded', () => {
 // Manejar envío de formulario de contacto
 async function handleContactSubmit(e) {
     e.preventDefault();
-    
+
     const name = document.getElementById('contactName').value;
     const email = document.getElementById('contactEmail').value;
     const subject = document.getElementById('contactSubject').value;
     const message = document.getElementById('contactMessage').value;
-    
+
     // Mostrar estado de carga
     const submitBtn = contactForm.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
     submitBtn.disabled = true;
-    
+
     // Simular envío de formulario (en un caso real, aquí se conectaría a un servicio de correo)
     setTimeout(() => {
         showConfirmation('Mensaje enviado correctamente. Nos pondremos en contacto contigo pronto.');
@@ -1048,13 +1084,13 @@ async function handleContactSubmit(e) {
 // Filtrar citas del paciente
 function filterAppointments(filter) {
     const appointments = document.querySelectorAll('#patientAppointments .appointment-card');
-    
+
     appointments.forEach(card => {
         const status = card.querySelector('.status-pending, .status-confirmed, .status-cancelled');
         if (!status) return;
-        
+
         const statusText = status.textContent.toLowerCase();
-        
+
         if (filter === 'all') {
             card.style.display = 'flex';
         } else if (filter === 'pending' && statusText.includes('pendiente')) {
@@ -1067,11 +1103,11 @@ function filterAppointments(filter) {
             card.style.display = 'none';
         }
     });
-    
+
     // Mostrar mensaje si no hay citas que coincidan con el filtro
     const visibleAppointments = Array.from(appointments).filter(card => card.style.display !== 'none');
     const emptyState = document.querySelector('#patientAppointments .empty-state');
-    
+
     if (visibleAppointments.length === 0 && emptyState) {
         emptyState.style.display = 'block';
     } else if (emptyState) {
@@ -1081,8 +1117,8 @@ function filterAppointments(filter) {
 
 // Exponer funciones al scope global para los onclick inline del HTML
 if (typeof window !== 'undefined') {
-  window.updateAppointmentStatus = updateAppointmentStatus;
-  window.cancelAppointment = cancelAppointment;
-  window.deleteException = deleteException;
-  window.editDaySchedule = editDaySchedule;
+    window.updateAppointmentStatus = updateAppointmentStatus;
+    window.cancelAppointment = cancelAppointment;
+    window.deleteException = deleteException;
+    window.editDaySchedule = editDaySchedule;
 }
