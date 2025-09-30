@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
     <!-- Header -->
     <header class="header">
@@ -32,6 +34,7 @@
 
     <!-- Vista para usuarios no autenticados -->
     <main id="publicView" class="container">
+        <!-- Sección Hero -->
         <section class="hero">
             <div class="hero-content">
                 <div class="hero-icon">
@@ -39,7 +42,7 @@
                 </div>
                 <h2>Cuida tu salud con nuestros servicios nutricionales</h2>
                 <p>Reserva tu cita con nuestros especialistas en nutrición de forma rápida y sencilla</p>
-                <button id="publicLoginBtn" class="btn btn-primary btn-large">
+                <button style="margin: 0 auto" id="publicLoginBtn" class="btn btn-primary btn-large">
                     <i class="fas fa-calendar-alt"></i> Reservar Cita Ahora
                 </button>
             </div>
@@ -61,19 +64,226 @@
                 </div>
             </div>
         </section>
+
+        <!-- Sección Quiénes Somos -->
+        <section class="section" id="about">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> Quiénes Somos</h2>
+                <p>Conoce más sobre nuestro equipo y nuestra misión</p>
+            </div>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>En NutriSalud, nos dedicamos a mejorar la calidad de vida de nuestros pacientes a través de una
+                        alimentación saludable y equilibrada. Nuestro equipo de nutricionistas certificados cuenta con
+                        amplia experiencia en diferentes áreas de la nutrición.</p>
+                    <p>Creemos en un enfoque personalizado, donde cada paciente recibe atención individualizada según
+                        sus necesidades, objetivos y condiciones de salud.</p>
+                    <ul class="about-features">
+                        <li><i class="fas fa-check-circle"></i> Más de 10 años de experiencia</li>
+                        <li><i class="fas fa-check-circle"></i> Especialistas en diferentes áreas</li>
+                        <li><i class="fas fa-check-circle"></i> Enfoque científico y personalizado</li>
+                        <li><i class="fas fa-check-circle"></i> Seguimiento continuo</li>
+                    </ul>
+                </div>
+                <div class="about-image">
+                    <img class="about-photo"
+                        src="assets/profesional.png"
+                        alt="Equipo de NutriSalud atendiendo pacientes" loading="lazy" width="300px" height="300px"/>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Servicios -->
+        <section class="section" id="services">
+            <div class="section-header">
+                <h2><i class="fas fa-concierge-bell"></i> Nuestros Servicios</h2>
+                <p>Descubre todos los servicios que ofrecemos para tu bienestar</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-weight"></i>
+                    </div>
+                    <h3>Control de Peso</h3>
+                    <p>Plan nutricional personalizado para alcanzar y mantener tu peso ideal de forma saludable.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>Nutrición Clínica</h3>
+                    <p>Asesoramiento nutricional para enfermedades como diabetes, hipertensión y problemas digestivos.
+                    </p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-running"></i>
+                    </div>
+                    <h3>Nutrición Deportiva</h3>
+                    <p>Optimiza tu rendimiento deportivo con planes alimenticios específicos para tu actividad.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-baby"></i>
+                    </div>
+                    <h3>Nutrición Pediátrica</h3>
+                    <p>Alimentación saludable para niños y adolescentes, promoviendo hábitos desde temprana edad.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h3>Planificación de Menús</h3>
+                    <p>Te ayudamos a organizar tus comidas semanales con recetas saludables y fáciles de preparar.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-stethoscope"></i>
+                    </div>
+                    <h3>Consultas de Seguimiento</h3>
+                    <p>Acompañamiento continuo para evaluar tu progreso y ajustar tu plan según sea necesario.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Testimonios -->
+        <section class="section" id="testimonials">
+            <div class="section-header">
+                <h2><i class="fas fa-comment-dots"></i> Testimonios</h2>
+                <p>Lo que dicen nuestros pacientes sobre nosotros</p>
+            </div>
+            <div class="testimonials-slider">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Gracias a NutriSalud he logrado cambiar mis hábitos alimenticios y he perdido 15 kg de forma
+                            saludable. ¡Me siento increíble!"</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <h4>María González</h4>
+                        <p>Paciente desde 2022</p>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"El equipo de nutricionistas es excelente. Me ayudaron a controlar mi diabetes con un plan
+                            alimenticio que se adapta a mi vida."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <h4>Carlos Rodríguez</h4>
+                        <p>Paciente desde 2021</p>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Como deportista, necesitaba optimizar mi alimentación. Con su ayuda he mejorado mi
+                            rendimiento y recuperación significativamente."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <h4>Ana Martínez</h4>
+                        <p>Paciente desde 2023</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sección Contacto -->
+        <section class="section" id="contact">
+            <div class="section-header">
+                <h2><i class="fas fa-envelope"></i> Contacto</h2>
+                <p>Ponte en contacto con nosotros para cualquier consulta</p>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h4>Dirección</h4>
+                            <p>Calle Principal 123, Ciudad</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <h4>Teléfono</h4>
+                            <p>+1 234 567 890</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h4>Email</h4>
+                            <p>info@nutrisalud.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <h4>Horario de Atención</h4>
+                            <p>Lunes a Viernes: 9:00 - 18:00</p>
+                            <p>Sábados: 9:00 - 13:00</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="contact-form">
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <label for="contactName">Nombre:</label>
+                            <input type="text" id="contactName" required placeholder="Tu nombre completo">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email:</label>
+                            <input type="email" id="contactEmail" required placeholder="tu@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactSubject">Asunto:</label>
+                            <input type="text" id="contactSubject" required placeholder="Asunto de tu mensaje">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Mensaje:</label>
+                            <textarea id="contactMessage" rows="5" required
+                                placeholder="Escribe tu mensaje aquí..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-paper-plane"></i> Enviar Mensaje
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Vista para pacientes -->
     <main id="patientView" class="container hidden">
-        <div class="page-header">
-            <h2><i class="fas fa-calendar-alt"></i> Mis Reservas</h2>
-            <p>Gestiona tus citas programadas con la nutricionista</p>
+        <div class="patient-header">
+            <div class="page-header">
+                <h2><i class="fas fa-calendar-alt"></i> Mis Reservas</h2>
+                <p>Gestiona tus citas programadas con la nutricionista</p>
+            </div>
+            <div class="patient-welcome">
+                <div class="welcome-card">
+                    <div class="welcome-content">
+                        <h3>¡Hola de nuevo!</h3>
+                        <p>Esperamos que estés teniendo un excelente día. Aquí puedes gestionar todas tus citas y ver tu
+                            historial.</p>
+                    </div>
+                    <div class="welcome-actions">
+                        <button id="newAppointmentBtn" class="btn btn-primary">
+                            <i class="fas fa-plus-circle"></i> Solicitar Nueva Cita
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <div class="action-bar">
-            <button id="newAppointmentBtn" class="btn btn-primary">
-                <i class="fas fa-plus-circle"></i> Solicitar Nueva Cita
-            </button>
+            <div class="action-filters">
+                <button class="filter-btn active" data-filter="all">Todas</button>
+                <button class="filter-btn" data-filter="pending">Pendientes</button>
+                <button class="filter-btn" data-filter="confirmed">Confirmadas</button>
+                <button class="filter-btn" data-filter="cancelled">Canceladas</button>
+            </div>
         </div>
+
         <div id="patientAppointments" class="appointments-list">
             <div class="loading-state">
                 <i class="fas fa-spinner fa-spin"></i>
@@ -88,7 +298,7 @@
             <h2><i class="fas fa-tachometer-alt"></i> Panel de Administración</h2>
             <p>Gestiona reservas, horarios y configuraciones del sistema</p>
         </div>
-        
+
         <div class="admin-tabs">
             <button class="tab-btn active" data-tab="appointments">
                 <i class="fas fa-calendar-check"></i> Reservas
@@ -100,7 +310,7 @@
                 <i class="fas fa-exclamation-circle"></i> Excepciones
             </button>
         </div>
-        
+
         <div id="appointmentsTab" class="tab-content active">
             <div class="tab-header">
                 <h3><i class="fas fa-list"></i> Reservas Pendientes</h3>
@@ -118,7 +328,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="scheduleTab" class="tab-content">
             <div class="tab-header">
                 <h3><i class="fas fa-cog"></i> Configurar Horario de Atención</h3>
@@ -137,7 +347,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="config-card">
                     <h4><i class="fas fa-calendar-week"></i> Horario Semanal</h4>
                     <div id="weeklySchedule" class="weekly-schedule">
@@ -149,7 +359,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="exceptionsTab" class="tab-content">
             <div class="tab-header">
                 <h3><i class="fas fa-calendar-times"></i> Excepciones de Horario</h3>
@@ -166,8 +376,60 @@
         </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="logo-container">
+                        <i class="fas fa-heartbeat logo-icon"></i>
+                        <h3 class="logo">NutriSalud</h3>
+                    </div>
+                    <p>Tu salud es nuestra prioridad. Ofrecemos servicios de nutrición personalizados para ayudarte a
+                        alcanzar tus objetivos de bienestar.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4>Enlaces Rápidos</h4>
+                    <ul>
+                        <li><a href="#about">Quiénes Somos</a></li>
+                        <li><a href="#services">Servicios</a></li>
+                        <li><a href="#testimonials">Testimonios</a></li>
+                        <li><a href="#contact">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Servicios</h4>
+                    <ul>
+                        <li><a href="#">Control de Peso</a></li>
+                        <li><a href="#">Nutrición Clínica</a></li>
+                        <li><a href="#">Nutrición Deportiva</a></li>
+                        <li><a href="#">Nutrición Pediátrica</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contacto</h4>
+                    <ul>
+                        <li><i class="fas fa-map-marker-alt"></i> Calle Principal 123, Ciudad</li>
+                        <li><i class="fas fa-phone"></i> +1 234 567 890</li>
+                        <li><i class="fas fa-envelope"></i> info@nutrisalud.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 NutriSalud. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modales (mantener los mismos modales existentes) -->
     <!-- Modal de Login -->
-    <div id="loginModal" class="modal hidden">
+    <div id="loginModal" class="modal hidden modal--auth">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h2>
@@ -191,7 +453,7 @@
     </div>
 
     <!-- Modal de Registro -->
-    <div id="registerModal" class="modal hidden">
+    <div id="registerModal" class="modal hidden modal--auth">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-user-plus"></i> Registrarse</h2>
@@ -219,7 +481,7 @@
     </div>
 
     <!-- Modal de Nueva Cita -->
-    <div id="appointmentModal" class="modal hidden">
+    <div id="appointmentModal" class="modal hidden modal--auth">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-calendar-plus"></i> Solicitar Nueva Cita</h2>
@@ -238,7 +500,8 @@
                 </div>
                 <div class="form-group">
                     <label for="appointmentNotes"><i class="fas fa-sticky-note"></i> Notas (opcional):</label>
-                    <textarea id="appointmentNotes" rows="3" placeholder="Agrega cualquier información adicional que consideres importante..."></textarea>
+                    <textarea id="appointmentNotes" rows="3"
+                        placeholder="Agrega cualquier información adicional que consideres importante..."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary btn-full">
                     <i class="fas fa-calendar-check"></i> Solicitar Cita
@@ -308,4 +571,5 @@
 
     <script type="module" src="app.js"></script>
 </body>
+
 </html>

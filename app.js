@@ -346,52 +346,46 @@ async function loadAllAppointments() {
 
 // Crear tarjeta de cita
 function createAppointmentCard(appointment, isAdmin) {
-    const card = document.createElement('div');
-    card.className = 'appointment-card';
-    
-    const date = new Date(appointment.appointment_date);
-    const formattedDate = date.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    });
-    const formattedTime = date.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-    });
-    
-    // Icono según estado
-    let statusIcon = '';
-    if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
-    if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
-    if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
-    
-    card.innerHTML = `
-        <div class="appointment-info">
-            <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? appointment.profiles.name : 'Nutricionista'}</h4>
-            <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
-            <p><i class="fas fa-clock"></i> ${formattedTime}</p>
-            <p class="status-${appointment.status}">${statusIcon} Estado: ${getStatusText(appointment.status)}</p>
-            ${appointment.notes ? `<p><i class="fas fa-sticky-note"></i> ${appointment.notes}</p>` : ''}
-        </div>
-        <div class="appointment-actions">
-            ${isAdmin ? `
-                <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
-                    <i class="fas fa-check"></i> Confirmar
-                </button>
-                <button class="btn btn-secondary" onclick="updateAppointmentStatus('${appointment.id}', 'cancelled')">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
-            ` : `
-                <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
-                    <i class="fas fa-times"></i> Cancelar Cita
-                </button>
-            `}
-        </div>
-    `;
-    
-    return card;
+  const card = document.createElement('div');
+  card.className = 'appointment-card';
+
+  const date = new Date(appointment.appointment_date);
+  const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const formattedTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+  let statusIcon = '';
+  if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
+  if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
+  if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
+
+  const showConfirm = isAdmin && appointment.status !== 'confirmed';
+
+  card.innerHTML = `
+    <div class="appointment-info">
+      <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? appointment.profiles.name : 'Nutricionista'}</h4>
+      <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
+      <p><i class="fas fa-clock"></i> ${formattedTime}</p>
+      <p class="status-${appointment.status}">${statusIcon} Estado: ${getStatusText(appointment.status)}</p>
+      ${appointment.notes ? `<p><i class="fas fa-sticky-note"></i> ${appointment.notes}</p>` : ''}
+    </div>
+    <div class="appointment-actions">
+      ${isAdmin ? `
+        ${showConfirm ? `
+          <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
+            <i class="fas fa-check"></i> Confirmar
+          </button>` : ``}
+        <button class="btn btn-secondary" onclick="updateAppointmentStatus('${appointment.id}', 'cancelled')">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+      ` : `
+        <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
+          <i class="fas fa-times"></i> Cancelar Cita
+        </button>
+      `}
+    </div>
+  `;
+
+  return card;
 }
 
 // Cargar horario semanal
@@ -1006,3 +1000,89 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Añadir al final del archivo app.js, después de la función initializeDatabase()
+
+// Funcionalidad para el formulario de contacto
+document.addEventListener('DOMContentLoaded', () => {
+    // Añadir este código dentro de initEventListeners()
+    const contactForm = document.getElementById('contactForm');
+    if (contactForm) {
+        contactForm.addEventListener('submit', handleContactSubmit);
+    }
+    
+    // Añadir funcionalidad de filtros para citas del paciente
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            filterAppointments(e.target.dataset.filter);
+        });
+    });
+});
+
+// Manejar envío de formulario de contacto
+async function handleContactSubmit(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('contactName').value;
+    const email = document.getElementById('contactEmail').value;
+    const subject = document.getElementById('contactSubject').value;
+    const message = document.getElementById('contactMessage').value;
+    
+    // Mostrar estado de carga
+    const submitBtn = contactForm.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+    submitBtn.disabled = true;
+    
+    // Simular envío de formulario (en un caso real, aquí se conectaría a un servicio de correo)
+    setTimeout(() => {
+        showConfirmation('Mensaje enviado correctamente. Nos pondremos en contacto contigo pronto.');
+        contactForm.reset();
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 1500);
+}
+
+// Filtrar citas del paciente
+function filterAppointments(filter) {
+    const appointments = document.querySelectorAll('#patientAppointments .appointment-card');
+    
+    appointments.forEach(card => {
+        const status = card.querySelector('.status-pending, .status-confirmed, .status-cancelled');
+        if (!status) return;
+        
+        const statusText = status.textContent.toLowerCase();
+        
+        if (filter === 'all') {
+            card.style.display = 'flex';
+        } else if (filter === 'pending' && statusText.includes('pendiente')) {
+            card.style.display = 'flex';
+        } else if (filter === 'confirmed' && statusText.includes('confirmada')) {
+            card.style.display = 'flex';
+        } else if (filter === 'cancelled' && statusText.includes('cancelada')) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    // Mostrar mensaje si no hay citas que coincidan con el filtro
+    const visibleAppointments = Array.from(appointments).filter(card => card.style.display !== 'none');
+    const emptyState = document.querySelector('#patientAppointments .empty-state');
+    
+    if (visibleAppointments.length === 0 && emptyState) {
+        emptyState.style.display = 'block';
+    } else if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+}
+
+// Exponer funciones al scope global para los onclick inline del HTML
+if (typeof window !== 'undefined') {
+  window.updateAppointmentStatus = updateAppointmentStatus;
+  window.cancelAppointment = cancelAppointment;
+  window.deleteException = deleteException;
+  window.editDaySchedule = editDaySchedule;
+}
