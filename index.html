@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriSalud - Sistema de Reservas</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo-container">
+                <i class="fas fa-heartbeat logo-icon"></i>
+                <h1 class="logo">NutriSalud</h1>
+            </div>
+            <nav class="nav">
+                <button id="loginBtn" class="btn btn-outline">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+                <button id="registerBtn" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Registrarse
+                </button>
+                <button id="logoutBtn" class="btn btn-secondary hidden">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Vista para usuarios no autenticados -->
+    <main id="publicView" class="container">
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <h2>Cuida tu salud con nuestros servicios nutricionales</h2>
+                <p>Reserva tu cita con nuestros especialistas en nutrición de forma rápida y sencilla</p>
+                <button id="publicLoginBtn" class="btn btn-primary btn-large">
+                    <i class="fas fa-calendar-alt"></i> Reservar Cita Ahora
+                </button>
+            </div>
+            <div class="hero-features">
+                <div class="feature">
+                    <i class="fas fa-clock"></i>
+                    <h3>Horarios Flexibles</h3>
+                    <p>Elige el horario que mejor se adapte a tu rutina</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-bell"></i>
+                    <h3>Recordatorios</h3>
+                    <p>Recibe notificaciones de tu cita por correo</p>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-user-md"></i>
+                    <h3>Profesionales Calificados</h3>
+                    <p>Atención personalizada con nutricionistas certificados</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Vista para pacientes -->
+    <main id="patientView" class="container hidden">
+        <div class="page-header">
+            <h2><i class="fas fa-calendar-alt"></i> Mis Reservas</h2>
+            <p>Gestiona tus citas programadas con la nutricionista</p>
+        </div>
+        <div class="action-bar">
+            <button id="newAppointmentBtn" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Solicitar Nueva Cita
+            </button>
+        </div>
+        <div id="patientAppointments" class="appointments-list">
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Cargando tus citas...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Vista para administrador -->
+    <main id="adminView" class="container hidden">
+        <div class="page-header">
+            <h2><i class="fas fa-tachometer-alt"></i> Panel de Administración</h2>
+            <p>Gestiona reservas, horarios y configuraciones del sistema</p>
+        </div>
+        
+        <div class="admin-tabs">
+            <button class="tab-btn active" data-tab="appointments">
+                <i class="fas fa-calendar-check"></i> Reservas
+            </button>
+            <button class="tab-btn" data-tab="schedule">
+                <i class="fas fa-clock"></i> Horario
+            </button>
+            <button class="tab-btn" data-tab="exceptions">
+                <i class="fas fa-exclamation-circle"></i> Excepciones
+            </button>
+        </div>
+        
+        <div id="appointmentsTab" class="tab-content active">
+            <div class="tab-header">
+                <h3><i class="fas fa-list"></i> Reservas Pendientes</h3>
+                <div class="tab-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Buscar reservas...">
+                    </div>
+                </div>
+            </div>
+            <div id="adminAppointments" class="appointments-list">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando reservas...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="scheduleTab" class="tab-content">
+            <div class="tab-header">
+                <h3><i class="fas fa-cog"></i> Configurar Horario de Atención</h3>
+            </div>
+            <div class="schedule-config">
+                <div class="config-card">
+                    <h4><i class="fas fa-stopwatch"></i> Duración de Sesiones</h4>
+                    <div class="form-group-inline">
+                        <div class="input-with-icon">
+                            <i class="fas fa-clock"></i>
+                            <input type="number" id="sessionDuration" min="15" step="15" value="60">
+                        </div>
+                        <span>minutos</span>
+                        <button id="saveDurationBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="config-card">
+                    <h4><i class="fas fa-calendar-week"></i> Horario Semanal</h4>
+                    <div id="weeklySchedule" class="weekly-schedule">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando horarios...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="exceptionsTab" class="tab-content">
+            <div class="tab-header">
+                <h3><i class="fas fa-calendar-times"></i> Excepciones de Horario</h3>
+                <button id="addExceptionBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Agregar Excepción
+                </button>
+            </div>
+            <div id="exceptionsList" class="exceptions-list">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando excepciones...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                    <input type="email" id="loginEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Contraseña:</label>
+                    <input type="password" id="loginPassword" required placeholder="Ingresa tu contraseña">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+            </form>
+            <p id="loginMessage" class="message"></p>
+        </div>
+    </div>
+
+    <!-- Modal de Registro -->
+    <div id="registerModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Registrarse</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Nombre:</label>
+                    <input type="text" id="registerName" required placeholder="Tu nombre completo">
+                </div>
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email:</label>
+                    <input type="email" id="registerEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Contraseña:</label>
+                    <input type="password" id="registerPassword" required placeholder="Crea una contraseña segura">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-user-plus"></i> Registrarse
+                </button>
+            </form>
+            <p id="registerMessage" class="message"></p>
+        </div>
+    </div>
+
+    <!-- Modal de Nueva Cita -->
+    <div id="appointmentModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-plus"></i> Solicitar Nueva Cita</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="appointmentForm">
+                <div class="form-group">
+                    <label for="appointmentDate"><i class="fas fa-calendar-day"></i> Fecha:</label>
+                    <input type="date" id="appointmentDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentTime"><i class="fas fa-clock"></i> Hora:</label>
+                    <select id="appointmentTime" required>
+                        <option value="">Selecciona una hora</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentNotes"><i class="fas fa-sticky-note"></i> Notas (opcional):</label>
+                    <textarea id="appointmentNotes" rows="3" placeholder="Agrega cualquier información adicional que consideres importante..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-calendar-check"></i> Solicitar Cita
+                </button>
+            </form>
+            <p id="appointmentMessage" class="message"></p>
+        </div>
+    </div>
+
+    <!-- Modal de Excepción -->
+    <div id="exceptionModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-times"></i> Agregar Excepción de Horario</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="exceptionForm">
+                <div class="form-group">
+                    <label for="exceptionDate"><i class="fas fa-calendar-day"></i> Fecha:</label>
+                    <input type="date" id="exceptionDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="exceptionType"><i class="fas fa-exclamation-circle"></i> Tipo:</label>
+                    <select id="exceptionType" required>
+                        <option value="closed">Día sin atención</option>
+                        <option value="modified">Horario modificado</option>
+                    </select>
+                </div>
+                <div id="modifiedHours" class="form-group hidden">
+                    <label><i class="fas fa-clock"></i> Horario modificado:</label>
+                    <div class="time-inputs">
+                        <input type="time" id="exceptionStartTime">
+                        <span class="time-separator">a</span>
+                        <input type="time" id="exceptionEndTime">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="exceptionReason"><i class="fas fa-comment"></i> Razón:</label>
+                    <input type="text" id="exceptionReason" required placeholder="Motivo de la excepción">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    <i class="fas fa-plus-circle"></i> Agregar Excepción
+                </button>
+            </form>
+            <p id="exceptionMessage" class="message"></p>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div id="confirmationModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-check-circle"></i> Confirmación</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="confirmation-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <p id="confirmationMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmationOk" class="btn btn-primary btn-full">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
