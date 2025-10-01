@@ -584,7 +584,7 @@ html { scroll-behavior: smooth; }
     justify-content: space-between;
     align-items: center;
     transition: var(--transition);
-    border-left: 4px solid var(--warning);
+    border-left: 4px solid var(--primary-blue);
 }
 
 .exception-card:hover {
