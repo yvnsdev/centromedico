@@ -201,6 +201,7 @@ async function handleRegister(e) {
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
     const password = document.getElementById('registerPassword').value;
+    const phone = document.getElementById('registerPhone').value;
     const message = document.getElementById('registerMessage');
 
     // Mostrar estado de carga
@@ -214,7 +215,8 @@ async function handleRegister(e) {
         password,
         options: {
             data: {
-                name: name
+                name: name,
+                phone: phone
             }
         }
     });
@@ -233,7 +235,7 @@ async function handleRegister(e) {
             await supabase
                 .from('profiles')
                 .insert([
-                    { id: data.user.id, name: name, role: 'patient' }
+                    { id: data.user.id, name: name, role: 'patient', phone: phone }
                 ]);
         }
 
@@ -922,14 +924,14 @@ function minutesToTime(minutes) {
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-// ==== EmailJS: init ÚNICA y correcta ====
+// ==== EmailJS: init correcto para emailjs-com@3 ====
 (function initEmailJS() {
   try {
     if (typeof emailjs === "undefined") {
       console.error("[EmailJS] SDK no cargado. Revisa el <script> en index.html.");
       return;
     }
-    emailjs.init({ publicKey: "aE1WHrElpbOsKODgc" });
+    emailjs.init("aE1WHrElpbOsKODgc"); // <- string, tal cual desde el Dashboard
     console.log("[EmailJS] init OK", emailjs.version);
   } catch (e) {
     console.error("[EmailJS] init FAIL:", e);
@@ -937,30 +939,27 @@ function minutesToTime(minutes) {
 })();
 
 async function sendConfirmationEmail(toEmail, appointmentDateTime) {
-  const formatted = appointmentDateTime.toLocaleString("es-CL", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
+    const formatted = appointmentDateTime.toLocaleString("es-CL", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric",
+        hour: "2-digit", minute: "2-digit"
+    });
 
-  const params = {
-    // IMPORTANTES: que coincidan con el template
-    title: "Confirmación de cita",
-    user_name: currentUser?.user_metadata?.name || "Paciente",
-    clinic_name: "Nutrisalud",
-    appointment_datetime: formatted,
-    clinic_address: "Calle Principal 123, Ciudad, País",
-    cta_url: window.location.origin,
-    support_email: "equipontek@gmail.com",
-    name: currentUser?.user_metadata?.name || "Paciente",
-    email: toEmail,                 // <-- el template usa {{email}} en el "To:"
-  };
-
-  try {
-    const r = await emailjs.send("service_vkcr10n", "template_0vxcwod", params);
-    console.log("EmailJS OK", r);
-  } catch (e) {
-    console.error("EmailJS FAIL", e);
-  }
+    try {
+        const r = await emailjs.send("service_1q04oha", "template_0vxcwod", {
+            title: "Confirmación de cita",
+            user_name: currentUser?.user_metadata?.name || "Paciente",
+            clinic_name: "Nutrisalud",
+            appointment_datetime: formatted,
+            clinic_address: "Calle Principal 123, Ciudad, País",
+            cta_url: window.location.origin,
+            support_email: "equipontek@gmail.com",
+            name: currentUser?.user_metadata?.name || "Paciente",
+            email: toEmail,
+        });
+        console.log("EmailJS OK", r);
+    } catch (e) {
+        console.error("EmailJS FAIL", e);
+    }
 }
 
 function sendStatusEmail(email, status, appointmentDate) {

@@ -1,21 +1,29 @@
 /* Variables de colores */
+/* Paleta Carpediem */
 :root {
-    --primary-blue: #3498db;
-    --light-blue: #5dade2;
-    --lighter-blue: #aed6f1;
-    --very-light-blue: #e1f0fa;
-    --white: #ffffff;
-    --light-gray: #f8f9fa;
-    --medium-gray: #e9ecef;
-    --dark-gray: #343a40;
-    --text-gray: #6c757d;
-    --success: #28a745;
-    --warning: #ffc107;
-    --error: #dc3545;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.15);
-    --radius: 10px;
-    --transition: all 0.3s ease;
+  /* Teal corporativo */
+  --primary-blue: #027578;      /* Principal (antes azul) */
+  --light-blue:   #51a6a3;      /* Hover/cta suave */
+  --lighter-blue: #a4d3c9;      /* Fondos suaves / chips */
+  --very-light-blue: #dff3e8;   /* Fondos muy claros / hero */
+
+  /* Extra de la paleta (por si lo necesitas en gradientes o badges) */
+  --brand-accent: #73bcc2;      /* Complemento */
+  --brand-deep:   #025160;      /* Variante más oscura */
+
+  /* Resto de tu sistema de diseño: */
+  --white: #ffffff;
+  --light-gray: #f8f9fa;
+  --medium-gray: #e9ecef;
+  --dark-gray: #343a40;
+  --text-gray: #6c757d;
+  --success: #28a745;
+  --warning: #ffc107;
+  --error: #dc3545;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.15);
+  --radius: 10px;
+  --transition: all 0.3s ease;
 }
 
 /* Estilos generales */
@@ -75,9 +83,85 @@ body {
     font-weight: 700;
 }
 
+.logo-img {
+    height: 40px;         /* ajusta según el tamaño real del logo */
+    width: auto;
+    object-fit: contain;
+}
+
 .nav {
     display: flex;
     gap: 10px;
+}
+
+/* Scroll suave nativo */
+html { scroll-behavior: smooth; }
+
+/* Evitar que el header fijo tape los anclajes */
+.section, #about, #services, #testimonials, #contact { scroll-margin-top: 90px; }
+
+/* Links del navbar con subrayado animado */
+.nav .nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 200ms ease;
+}
+
+/* Línea base oculta */
+.nav .nav-link::after {
+  content: "";
+  position: absolute;
+  left: 12px;             /* alinea con el padding */
+  right: 12px;            /* deja margen simétrico */
+  bottom: 6px;            /* separa del texto */
+  height: 2px;
+  background: currentColor;   /* usa el mismo color del link */
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0.9;
+  transition: transform 250ms ease;
+}
+
+/* Hover/Focus: muestra el subrayado (sin cambiar fondo) */
+.nav .nav-link:hover,
+.nav .nav-link:focus-visible {
+  color: var(--primary-blue);
+}
+.nav .nav-link:hover::after,
+.nav .nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* Estado activo: subrayado permanente para la sección actual */
+.nav .nav-link.active::after,
+.nav .nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+/* Accesibilidad: si el usuario prefiere menos animación */
+@media (prefers-reduced-motion: reduce) {
+  .nav .nav-link,
+  .nav .nav-link::after {
+    transition: none;
+  }
+}
+
+/* En móviles, que no se rompa la línea */
+@media (max-width: 768px) {
+  .nav { flex-wrap: wrap; }
+  .nav .nav-link { padding: 8px 10px; }
+  .nav .nav-link::after {
+    left: 10px;
+    right: 10px;
+    bottom: 4px;
+  }
 }
 
 /* Botones */
@@ -944,6 +1028,51 @@ body {
     box-shadow: var(--shadow);
     position: relative;
 }
+
+.testimonial-header {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.testimonial-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
+  border: 2px solid var(--lighter-blue, #e9f4ff);
+  box-shadow: 0 4px 10px rgba(0,0,0,.08);
+}
+
+/* Tipografía autor */
+.testimonial-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--primary-dark);
+}
+.testimonial-header p {
+  margin: 2px 0 0;
+  font-size: .9rem;
+  color: var(--text-muted, #6b7280);
+}
+
+/* Texto del testimonio */
+.testimonial-content p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-color, #334155);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .testimonial-card { padding: 14px; }
+  .testimonial-header { grid-template-columns: 48px 1fr; gap: 10px; }
+  .testimonial-avatar { width: 48px; height: 48px; }
+}
+
 
 .testimonial-card::before {
     content: "“";

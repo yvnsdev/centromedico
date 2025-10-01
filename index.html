@@ -4,9 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NutriSalud - Sistema de Reservas</title>
+    <title>Carpediem - Sistema de Reservas</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="assets/favicon.png" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
@@ -15,10 +16,16 @@
     <header class="header">
         <div class="container">
             <div class="logo-container">
-                <i class="fas fa-heartbeat logo-icon"></i>
-                <h1 class="logo">NutriSalud</h1>
+                <img src="assets/logo.png" alt="Carpediem Logo" class="logo-img">
             </div>
             <nav class="nav">
+                <!-- enlaces a secciones -->
+                <a class="nav-link" href="#about"><i class="fas fa-user"></i> Nosotros</a>
+                <a class="nav-link" href="#services"><i class="fas fa-concierge-bell"></i> Servicios</a>
+                <a class="nav-link" href="#testimonials"><i class="fas fa-comment-dots"></i> Testimonios</a>
+                <a class="nav-link" href="#contact"><i class="fas fa-envelope"></i> Contacto</a>
+
+                <!-- botones existentes -->
                 <button id="loginBtn" class="btn btn-outline">
                     <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
                 </button>
@@ -43,7 +50,7 @@
                 <h2>Cuida tu salud con nuestros servicios nutricionales</h2>
                 <p>Reserva tu cita con nuestros especialistas en nutrición de forma rápida y sencilla</p>
                 <button style="margin: 0 auto" id="publicLoginBtn" class="btn btn-primary btn-large">
-                    <i class="fas fa-calendar-alt"></i> Reservar Cita Ahora
+                    <i class="fas fa-calendar-alt"></i> Reservar Cita
                 </button>
             </div>
             <div class="hero-features">
@@ -73,22 +80,27 @@
             </div>
             <div class="about-content">
                 <div class="about-text">
-                    <p>En NutriSalud, nos dedicamos a mejorar la calidad de vida de nuestros pacientes a través de una
-                        alimentación saludable y equilibrada. Nuestro equipo de nutricionistas certificados cuenta con
-                        amplia experiencia en diferentes áreas de la nutrición.</p>
-                    <p>Creemos en un enfoque personalizado, donde cada paciente recibe atención individualizada según
-                        sus necesidades, objetivos y condiciones de salud.</p>
+                    <p>Soy <strong>Bárbara San Martín</strong>, nutricionista titulada de la
+                        <strong>Universidad del Bío-Bío (UBB)</strong>, con formación complementaria en
+                        <strong>diplomado en Emprendimiento y Liderazgo</strong>. Mi vocación es ayudar a las
+                        personas a mejorar su bienestar y calidad de vida mediante una alimentación saludable,
+                        consciente y sostenible.
+                    </p>
+
+                    <p>Mi enfoque se basa en la atención personalizada, considerando las metas, necesidades y
+                        condiciones de salud de cada paciente. Busco generar un acompañamiento cercano y
+                        profesional que permita alcanzar cambios reales y duraderos.</p>
+
                     <ul class="about-features">
-                        <li><i class="fas fa-check-circle"></i> Más de 10 años de experiencia</li>
-                        <li><i class="fas fa-check-circle"></i> Especialistas en diferentes áreas</li>
-                        <li><i class="fas fa-check-circle"></i> Enfoque científico y personalizado</li>
-                        <li><i class="fas fa-check-circle"></i> Seguimiento continuo</li>
+                        <li><i class="fas fa-check-circle"></i> Nutricionista titulada UBB</li>
+                        <li><i class="fas fa-check-circle"></i> Diplomado en Emprendimiento y Liderazgo</li>
+                        <li><i class="fas fa-check-circle"></i> Experiencia en atención personalizada</li>
+                        <li><i class="fas fa-check-circle"></i> Acompañamiento cercano y profesional</li>
                     </ul>
                 </div>
                 <div class="about-image">
-                    <img class="about-photo"
-                        src="assets/profesional.png"
-                        alt="Equipo de NutriSalud atendiendo pacientes" loading="lazy" width="300px" height="300px"/>
+                    <img class="about-photo" src="assets/profesional.png"
+                        alt="Equipo de NutriSalud atendiendo pacientes" loading="lazy" width="350px" height="350px" />
                 </div>
             </div>
         </section>
@@ -154,33 +166,50 @@
             </div>
             <div class="testimonials-slider">
                 <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <img class="testimonial-avatar"
+                            src="https://www.hubspot.com/hubfs/pa%CC%81ginas-testimoniales.png"
+                            alt="Foto de María González" loading="lazy">
+                        <div>
+                            <h4>María González</h4>
+                            <p>Paciente desde 2022</p>
+                        </div>
+                    </div>
                     <div class="testimonial-content">
                         <p>"Gracias a NutriSalud he logrado cambiar mis hábitos alimenticios y he perdido 15 kg de forma
                             saludable. ¡Me siento increíble!"</p>
                     </div>
-                    <div class="testimonial-author">
-                        <h4>María González</h4>
-                        <p>Paciente desde 2022</p>
-                    </div>
                 </div>
+
                 <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <img class="testimonial-avatar"
+                            src="https://www.pastoraldejuventud.es/wp-content/uploads/2020/04/Pastoral-de-juventud-testimonio-raul-claretianos.jpg"
+                            alt="Foto de Carlos Rodríguez" loading="lazy">
+                        <div>
+                            <h4>Carlos Rodríguez</h4>
+                            <p>Paciente desde 2021</p>
+                        </div>
+                    </div>
                     <div class="testimonial-content">
                         <p>"El equipo de nutricionistas es excelente. Me ayudaron a controlar mi diabetes con un plan
                             alimenticio que se adapta a mi vida."</p>
                     </div>
-                    <div class="testimonial-author">
-                        <h4>Carlos Rodríguez</h4>
-                        <p>Paciente desde 2021</p>
-                    </div>
                 </div>
+
                 <div class="testimonial-card">
+                    <div class="testimonial-header">
+                        <img class="testimonial-avatar"
+                            src="https://t3.ftcdn.net/jpg/02/96/66/58/360_F_296665879_g3GUJU6Vv9KzKkcNyaQ4uXEcCzRT6hSc.jpg"
+                            alt="Foto de Ana Martínez" loading="lazy">
+                        <div>
+                            <h4>Ana Martínez</h4>
+                            <p>Paciente desde 2023</p>
+                        </div>
+                    </div>
                     <div class="testimonial-content">
                         <p>"Como deportista, necesitaba optimizar mi alimentación. Con su ayuda he mejorado mi
                             rendimiento y recuperación significativamente."</p>
-                    </div>
-                    <div class="testimonial-author">
-                        <h4>Ana Martínez</h4>
-                        <p>Paciente desde 2023</p>
                     </div>
                 </div>
             </div>
@@ -243,7 +272,7 @@
                             <textarea id="contactMessage" rows="5" required
                                 placeholder="Escribe tu mensaje aquí..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-full">
+                        <button type="submit" class="btn btn-primary" style="margin-left:auto; display:block;">
                             <i class="fas fa-paper-plane"></i> Enviar Mensaje
                         </button>
                     </form>
@@ -382,9 +411,8 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <div class="logo-container">
-                        <i class="fas fa-heartbeat logo-icon"></i>
-                        <h3 class="logo">NutriSalud</h3>
-                    </div>
+                        <img src="assets/footer.png" alt="Carpediem Logo" class="logo-img">
+                    </div><br>
                     <p>Tu salud es nuestra prioridad. Ofrecemos servicios de nutrición personalizados para ayudarte a
                         alcanzar tus objetivos de bienestar.</p>
                     <div class="social-links">
@@ -427,7 +455,6 @@
         </div>
     </footer>
 
-    <!-- Modales (mantener los mismos modales existentes) -->
     <!-- Modal de Login -->
     <div id="loginModal" class="modal hidden modal--auth">
         <div class="modal-content">
@@ -467,6 +494,10 @@
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email:</label>
                     <input type="email" id="registerEmail" required placeholder="tu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Teléfono:</label>
+                    <input type="tel" id="registerPhone" required placeholder="+56 9 1234 5678">
                 </div>
                 <div class="form-group">
                     <label for="password"><i class="fas fa-lock"></i> Contraseña:</label>
