@@ -1846,3 +1846,21 @@ html { scroll-behavior: smooth; }
         text-align: center;
     }
 }
+
+/* CHECK (FA5 y FA6, i ó svg) */
+i.fas.fa-check,
+i.fas.fa-check-circle,
+svg.svg-inline--fa[data-icon="check"],
+svg.svg-inline--fa[data-icon="check-circle"]{
+  color: var(--primary-blue);
+}
+
+/* X / TIMES (FA5 y FA6, i ó svg) */
+i.fas.fa-times,
+i.fas.fa-times-circle,
+i.fas.fa-xmark,
+svg.svg-inline--fa[data-icon="times"],
+svg.svg-inline--fa[data-icon="times-circle"],
+svg.svg-inline--fa[data-icon="xmark"]{
+  color: var(--primary-blue);
+}

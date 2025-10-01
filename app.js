@@ -427,8 +427,8 @@ async function loadWeeklySchedule() {
 
         // Icono según si está activo o no
         const statusIcon = daySchedule && daySchedule.active ?
-            '<i class="fas fa-check-circle" style="color: var(--success);"></i>' :
-            '<i class="fas fa-times-circle" style="color: var(--error);"></i>';
+            '<i class="fas fa-check-circle" style="color: var(--primary-blue);"></i>' :
+            '<i class="fas fa-times-circle" style="color: var(--primary-blue);"></i>';
 
         dayCard.innerHTML = `
             <div class="day-info">
