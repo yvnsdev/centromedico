@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
     checkAuthState();
     setupDateRestrictions();
+    initFAQ();
 });
 
 // Configuración de event listeners
@@ -104,6 +105,57 @@ function initEventListeners() {
     // Confirmación modal
     confirmationOk.addEventListener('click', () => closeModal(confirmationModal));
 }
+
+// ====== NAV: hamburguesa y dropdown ======
+function initResponsiveNav() {
+  const navToggle = document.getElementById('navToggle');
+  const navMenu   = document.getElementById('navMenu');
+  const servicesToggle = document.getElementById('servicesToggle');
+  const servicesDropdown = servicesToggle?.closest('.dropdown');
+
+  // Toggle menú móvil
+  if (navToggle && navMenu) {
+    navToggle.addEventListener('click', () => {
+      const open = navMenu.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+
+  // Abrir/cerrar dropdown Servicios (click + teclado)
+  if (servicesToggle && servicesDropdown) {
+    const closeAll = () => servicesDropdown.classList.remove('open');
+    servicesToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = servicesDropdown.classList.toggle('open');
+      servicesToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+    servicesToggle.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        servicesDropdown.classList.remove('open');
+        servicesToggle.setAttribute('aria-expanded', 'false');
+        servicesToggle.focus();
+      }
+    });
+    // Cerrar al hacer click afuera
+    document.addEventListener('click', (e) => {
+      if (!servicesDropdown.contains(e.target)) {
+        closeAll();
+        servicesToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // Cerrar menú móvil al navegar (mejora UX)
+  document.querySelectorAll('#navMenu a').forEach(a => {
+    a.addEventListener('click', () => navMenu.classList.remove('open'));
+  });
+}
+
+// Llama a esta función dentro de tu init actual
+// (tu app.js ya tiene "initEventListeners()" dentro de DOMContentLoaded)
+document.addEventListener('DOMContentLoaded', () => {
+  initResponsiveNav();
+});
 
 // Verificar estado de autenticación
 async function checkAuthState() {
@@ -374,7 +426,7 @@ function createAppointmentCard(appointment, isAdmin) {
       ${isAdmin ? `
         ${showConfirm ? `
             <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
-            <i class="fas fa-check"></i> Confirmar
+            <i style="color: white;" class="fas fa-check"></i> Confirmar
             </button>` : ``}
         <button class="btn btn-secondary" onclick="updateAppointmentStatus('${appointment.id}', 'cancelled')">
             <i class="fas fa-times"></i> Cancelar
@@ -1036,8 +1088,6 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Añadir al final del archivo app.js, después de la función initializeDatabase()
-
 // Funcionalidad para el formulario de contacto
 document.addEventListener('DOMContentLoaded', () => {
     // Añadir este código dentro de initEventListeners()
@@ -1112,6 +1162,27 @@ function filterAppointments(filter) {
     } else if (emptyState) {
         emptyState.style.display = 'none';
     }
+}
+
+// Inicializar FAQ
+function initFAQ() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        
+        question.addEventListener('click', () => {
+            // Cerrar otros items abiertos
+            faqItems.forEach(otherItem => {
+                if (otherItem !== item && otherItem.classList.contains('active')) {
+                    otherItem.classList.remove('active');
+                }
+            });
+            
+            // Alternar el item actual
+            item.classList.toggle('active');
+        });
+    });
 }
 
 // Exponer funciones al scope global para los onclick inline del HTML
