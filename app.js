@@ -1232,3 +1232,179 @@ function initMapEmbed() {
 document.addEventListener('DOMContentLoaded', () => {
   initMapEmbed();
 });
+
+// ===== Calendario de Reservas (Admin) =====
+let calCurrent = new Date();          // mes mostrado
+let calSelected = null;               // día seleccionado (Date)
+let monthAppointmentsMap = {};        // { 'YYYY-MM-DD': count }
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializa calendario solo si está visible el admin
+  if (document.getElementById('appointmentsTab')) {
+    initCalendar();
+  }
+});
+
+function initCalendar(){
+  document.getElementById('calPrev')?.addEventListener('click', () => {
+    calCurrent.setMonth(calCurrent.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('calNext')?.addEventListener('click', () => {
+    calCurrent.setMonth(calCurrent.getMonth() + 1);
+    renderCalendar();
+  });
+  // Valor inicial: hoy
+  calSelected = new Date();
+  setStartOfDay(calSelected);
+  renderCalendar().then(() => {
+    // Cargar reservas de hoy al abrir
+    loadAppointmentsByDay(calSelected);
+  });
+}
+
+async function renderCalendar(){
+  const title = document.getElementById('calTitle');
+  const grid  = document.getElementById('calendarGrid');
+  if (!title || !grid) return;
+
+  const year  = calCurrent.getFullYear();
+  const month = calCurrent.getMonth();
+
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth  = new Date(year, month + 1, 0);
+
+  title.textContent = firstOfMonth.toLocaleString('es-CL', { month:'long', year:'numeric' });
+
+  // Prefetch: mapa de cuentas por día del mes
+  monthAppointmentsMap = await fetchMonthCounts(firstOfMonth, lastOfMonth);
+
+  // Calcular desde qué lunes arranca la grilla (o lunes de la semana del 1)
+  const startOffset = ((firstOfMonth.getDay() + 6) % 7); // 0=Lunes, ..., 6=Domingo
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(firstOfMonth.getDate() - startOffset);
+
+  // 6 filas x 7 cols = 42 celdas
+  grid.innerHTML = '';
+  for (let i = 0; i < 42; i++){
+    const d = new Date(gridStart);
+    d.setDate(gridStart.getDate() + i);
+    const inMonth = d.getMonth() === month;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'calendar-day' + (inMonth ? '' : ' out');
+
+    // marca hoy
+    const today = new Date(); setStartOfDay(today);
+    const dKey = toKey(d);
+    if (toKey(today) === dKey) btn.classList.add('today');
+    if (calSelected && toKey(calSelected) === dKey) btn.classList.add('selected');
+
+    btn.textContent = d.getDate();
+
+    // badge de cantidad si hay
+    const count = monthAppointmentsMap[dKey] || 0;
+    if (count > 0){
+      const badge = document.createElement('span');
+      badge.className = 'count-badge';
+      badge.textContent = count;
+      btn.appendChild(badge);
+    }
+
+    // click: seleccionar y cargar
+    if (inMonth){
+      btn.addEventListener('click', () => {
+        calSelected = new Date(d);
+        setStartOfDay(calSelected);
+        document.getElementById('calSelectedLabel').textContent =
+          d.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+        document.getElementById('calDayCount').textContent = `${monthAppointmentsMap[dKey] || 0} reservas`;
+
+        // refrescar selección visual
+        grid.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        loadAppointmentsByDay(d);
+      });
+    } else {
+      // días fuera de mes no seleccionables
+      btn.disabled = true;
+    }
+
+    grid.appendChild(btn);
+  }
+}
+
+// Trae todas las reservas del mes (sin canceladas) y genera {YYYY-MM-DD: count}
+async function fetchMonthCounts(firstOfMonth, lastOfMonth){
+  const start = new Date(firstOfMonth); setStartOfDay(start);
+  const end   = new Date(lastOfMonth);  end.setHours(23,59,59,999);
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('appointment_date,status')
+    .gte('appointment_date', start.toISOString())
+    .lte('appointment_date', end.toISOString());
+
+  const map = {};
+  if (!error && Array.isArray(data)){
+    for (const a of data){
+      if (a.status === 'cancelled') continue;
+      const key = toKey(new Date(a.appointment_date));
+      map[key] = (map[key] || 0) + 1;
+    }
+  }
+  return map;
+}
+
+// Carga SOLO las reservas del día seleccionado en la lista derecha
+async function loadAppointmentsByDay(dateObj){
+  const list = document.getElementById('adminAppointments');
+  if (!list) return;
+
+  list.innerHTML = `
+    <div class="loading-state">
+      <i class="fas fa-spinner fa-spin"></i>
+      <p>Cargando reservas del día...</p>
+    </div>`;
+
+  const start = new Date(dateObj); setStartOfDay(start);
+  const end   = new Date(dateObj); end.setHours(23,59,59,999);
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select(`*, profiles:patient_id (name, email)`)
+    .gte('appointment_date', start.toISOString())
+    .lte('appointment_date', end.toISOString())
+    .order('appointment_date', { ascending: true });
+
+  if (error){
+    console.error('Error al cargar reservas del día:', error);
+    list.innerHTML = '<p class="message error">Error al cargar las reservas del día.</p>';
+    return;
+  }
+
+  // Actualiza el chip de cantidad
+  const key = toKey(start);
+  const count = (data || []).filter(a => a.status !== 'cancelled').length;
+  monthAppointmentsMap[key] = count;
+  const chip = document.getElementById('calDayCount');
+  if (chip) chip.textContent = `${count} reservas`;
+
+  list.innerHTML = '';
+  if (data.length === 0){
+    list.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-calendar-check"></i>
+        <h3>Sin reservas para este día</h3>
+        <p>Las reservas aparecerán aquí</p>
+      </div>`;
+    return;
+  }
+  data.forEach(ap => list.appendChild(createAppointmentCard(ap, true)));
+}
+
+// Helpers de fecha
+function setStartOfDay(d){ d.setHours(0,0,0,0); }
+function toKey(d){ return d.toISOString().slice(0,10); } // YYYY-MM-DD

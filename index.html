@@ -575,7 +575,7 @@
 
         <div id="appointmentsTab" class="tab-content active">
             <div class="tab-header">
-                <h3><i class="fas fa-list"></i> Reservas Pendientes</h3>
+                <h3><i class="fas fa-list"></i> Reservas</h3>
                 <div class="tab-actions">
                     <div class="search-box">
                         <i class="fas fa-search"></i>
@@ -583,11 +583,37 @@
                     </div>
                 </div>
             </div>
-            <div id="adminAppointments" class="appointments-list">
-                <div class="loading-state">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <p>Cargando reservas...</p>
-                </div>
+
+            <!-- Nuevo layout -->
+            <div class="appointments-layout">
+                <!-- Calendario -->
+                <aside class="calendar-card">
+                    <div class="calendar-header">
+                        <button class="cal-nav" id="calPrev" aria-label="Mes anterior"><i
+                                class="fas fa-chevron-left"></i></button>
+                        <div class="cal-title" id="calTitle">Mes Año</div>
+                        <button class="cal-nav" id="calNext" aria-label="Mes siguiente"><i
+                                class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <span>L</span><span>M</span><span>X</span><span>J</span><span>V</span><span>S</span><span>D</span>
+                    </div>
+                    <div class="calendar-grid" id="calendarGrid"><!-- días dinámicos --></div>
+                    <div class="calendar-footer">
+                        <span id="calSelectedLabel">Selecciona un día</span>
+                        <span class="chip" id="calDayCount">0 reservas</span>
+                    </div>
+                </aside>
+
+                <!-- Lista de reservas del día seleccionado -->
+                <section class="appointments-column">
+                    <div id="adminAppointments" class="appointments-list">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Cargando reservas...</p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
 
