@@ -1192,3 +1192,43 @@ if (typeof window !== 'undefined') {
     window.deleteException = deleteException;
     window.editDaySchedule = editDaySchedule;
 }
+
+// === Lazy-load del mapa en Contacto ===
+function initMapEmbed() {
+  const placeholder = document.querySelector('.map-embed');
+  if (!placeholder) return;
+
+  const loadIframe = () => {
+    if (placeholder.dataset.loaded) return;
+    const src = placeholder.getAttribute('data-src');
+    if (!src) return;
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('src', src);
+    iframe.setAttribute('loading', 'lazy');
+    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+    iframe.setAttribute('aria-label', 'Mapa de ubicación');
+    placeholder.appendChild(iframe);
+    placeholder.dataset.loaded = 'true';
+  };
+
+  // Usa IntersectionObserver si está disponible
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          loadIframe();
+          io.disconnect();
+        }
+      });
+    }, { rootMargin: '200px' });
+    io.observe(placeholder);
+  } else {
+    // Fallback simple
+    loadIframe();
+  }
+}
+
+// Llama dentro de tu DOMContentLoaded existente
+document.addEventListener('DOMContentLoaded', () => {
+  initMapEmbed();
+});

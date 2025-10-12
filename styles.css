@@ -1341,9 +1341,10 @@ html { scroll-behavior: smooth; }
 }
 
 .welcome-image {
-    width: 100%;
+    width: 150px;
     border-radius: var(--radius);
     overflow: hidden;
+    margin-left: 150px;
 }
 
 .welcome-image img {
