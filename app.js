@@ -31,7 +31,8 @@ const registerForm = document.getElementById('registerForm');
 const appointmentForm = document.getElementById('appointmentForm');
 const exceptionForm = document.getElementById('exceptionForm');
 
-const newAppointmentBtn = document.getElementById('newAppointmentBtn');
+const newAppointmentBtnPatient = document.getElementById('newAppointmentBtnPatient');
+const newAppointmentBtnAdmin = document.getElementById('newAppointmentBtnAdmin');
 const addExceptionBtn = document.getElementById('addExceptionBtn');
 
 const patientAppointments = document.getElementById('patientAppointments');
@@ -73,7 +74,18 @@ function initEventListeners() {
     exceptionForm.addEventListener('submit', handleExceptionSubmit);
 
     // Botones de acción
-    newAppointmentBtn.addEventListener('click', () => openModal(appointmentModal));
+    if (newAppointmentBtnPatient) {
+        newAppointmentBtnPatient.addEventListener('click', () => openModal(appointmentModal));
+    }
+
+    if (newAppointmentBtnAdmin) {
+        newAppointmentBtnAdmin.addEventListener('click', () => {
+            openModal(appointmentModal);
+            // si es admin, mostrar y cargar selects de Paciente/Estado
+            setTimeout(openAdminAppointmentFields, 0);
+        });
+    }
+
     addExceptionBtn.addEventListener('click', () => openModal(exceptionModal));
     saveDurationBtn.addEventListener('click', saveSessionDuration);
 
@@ -108,53 +120,53 @@ function initEventListeners() {
 
 // ====== NAV: hamburguesa y dropdown ======
 function initResponsiveNav() {
-  const navToggle = document.getElementById('navToggle');
-  const navMenu   = document.getElementById('navMenu');
-  const servicesToggle = document.getElementById('servicesToggle');
-  const servicesDropdown = servicesToggle?.closest('.dropdown');
+    const navToggle = document.getElementById('navToggle');
+    const navMenu = document.getElementById('navMenu');
+    const servicesToggle = document.getElementById('servicesToggle');
+    const servicesDropdown = servicesToggle?.closest('.dropdown');
 
-  // Toggle menú móvil
-  if (navToggle && navMenu) {
-    navToggle.addEventListener('click', () => {
-      const open = navMenu.classList.toggle('open');
-      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-  }
+    // Toggle menú móvil
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', () => {
+            const open = navMenu.classList.toggle('open');
+            navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+    }
 
-  // Abrir/cerrar dropdown Servicios (click + teclado)
-  if (servicesToggle && servicesDropdown) {
-    const closeAll = () => servicesDropdown.classList.remove('open');
-    servicesToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpen = servicesDropdown.classList.toggle('open');
-      servicesToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    });
-    servicesToggle.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        servicesDropdown.classList.remove('open');
-        servicesToggle.setAttribute('aria-expanded', 'false');
-        servicesToggle.focus();
-      }
-    });
-    // Cerrar al hacer click afuera
-    document.addEventListener('click', (e) => {
-      if (!servicesDropdown.contains(e.target)) {
-        closeAll();
-        servicesToggle.setAttribute('aria-expanded', 'false');
-      }
-    });
-  }
+    // Abrir/cerrar dropdown Servicios (click + teclado)
+    if (servicesToggle && servicesDropdown) {
+        const closeAll = () => servicesDropdown.classList.remove('open');
+        servicesToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = servicesDropdown.classList.toggle('open');
+            servicesToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        });
+        servicesToggle.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                servicesDropdown.classList.remove('open');
+                servicesToggle.setAttribute('aria-expanded', 'false');
+                servicesToggle.focus();
+            }
+        });
+        // Cerrar al hacer click afuera
+        document.addEventListener('click', (e) => {
+            if (!servicesDropdown.contains(e.target)) {
+                closeAll();
+                servicesToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
 
-  // Cerrar menú móvil al navegar (mejora UX)
-  document.querySelectorAll('#navMenu a').forEach(a => {
-    a.addEventListener('click', () => navMenu.classList.remove('open'));
-  });
+    // Cerrar menú móvil al navegar (mejora UX)
+    document.querySelectorAll('#navMenu a').forEach(a => {
+        a.addEventListener('click', () => navMenu.classList.remove('open'));
+    });
 }
 
 // Llama a esta función dentro de tu init actual
 // (tu app.js ya tiene "initEventListeners()" dentro de DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', () => {
-  initResponsiveNav();
+    initResponsiveNav();
 });
 
 // Verificar estado de autenticación
@@ -608,58 +620,103 @@ async function loadExceptions() {
     });
 }
 
-// Manejar envío de formulario de cita
+// Manejar envío de formulario de cita (soporta modo admin)
 async function handleAppointmentSubmit(e) {
     e.preventDefault();
 
-    const date = appointmentDate.value;
-    const time = appointmentTime.value;
-    const notes = document.getElementById('appointmentNotes').value;
+    const date = appointmentDate.value;     // input type="date"
+    const time = appointmentTime.value;     // input type="time"
+    const notes = document.getElementById('appointmentNotes')?.value || '';
 
     if (!date || !time) {
         showAppointmentMessage('Por favor, selecciona fecha y hora', 'error');
         return;
     }
 
+    // Construir Date local y luego enviar en UTC (ISO)
     const appointmentDateTime = new Date(`${date}T${time}`);
 
-    // Mostrar estado de carga
+    // UI: estado de carga
     const submitBtn = appointmentForm.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
+    const originalTxt = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Programando cita...';
     submitBtn.disabled = true;
 
+    // --- Admin: tomar paciente y estado desde los selects ---
+    const selPatient = document.getElementById('appointmentPatient'); // <select>
+    const selStatus = document.getElementById('appointmentStatus');  // <select>
+
+    let patientIdToUse = currentUser.id;     // por defecto, el propio paciente
+    let statusToUse = 'pending';
+    let notifyEmail = currentUser.email;  // para el aviso
+
+    if (userRole === 'admin') {
+        // Validar paciente seleccionado
+        if (!selPatient || !selPatient.value) {
+            showAppointmentMessage('Selecciona un paciente para agendar la cita.', 'error');
+            submitBtn.innerHTML = originalTxt;
+            submitBtn.disabled = false;
+            return;
+        }
+        patientIdToUse = selPatient.value;
+        statusToUse = (selStatus && selStatus.value) ? selStatus.value : 'pending';
+
+        // (Opcional) obtener email del paciente para el aviso
+        try {
+            const { data: p, error: perr } = await supabase
+                .from('profiles')
+                .select('email, name')
+                .eq('id', patientIdToUse)
+                .single();
+            if (!perr && p?.email) notifyEmail = p.email;
+        } catch (e) {
+            console.warn('No se pudo obtener email del paciente para notificación:', e);
+        }
+    }
+
+    // Insertar cita
     const { error } = await supabase
         .from('appointments')
-        .insert([
-            {
-                patient_id: currentUser.id,
-                appointment_date: appointmentDateTime.toISOString(),
-                notes: notes,
-                status: 'pending'
-            }
-        ]);
+        .insert([{
+            patient_id: patientIdToUse,
+            appointment_date: appointmentDateTime.toISOString(),
+            notes: notes,
+            status: statusToUse
+        }]);
 
     if (error) {
         console.error('Error al crear cita:', error);
         showAppointmentMessage('Error al crear la cita', 'error');
-        submitBtn.innerHTML = originalText;
+        submitBtn.innerHTML = originalTxt;
         submitBtn.disabled = false;
-    } else {
-        showAppointmentMessage('Cita solicitada correctamente. Te notificaremos por correo cuando sea confirmada.', 'success');
-
-        // Enviar correo de confirmación (simulado)
-        sendConfirmationEmail(currentUser.email, appointmentDateTime);
-
-        setTimeout(() => {
-            closeModal(appointmentModal);
-            if (userRole === 'admin') {
-                loadAllAppointments();
-            } else {
-                loadPatientAppointments();
-            }
-        }, 2000);
+        return;
     }
+
+    // OK
+    const okMsg = (userRole === 'admin')
+        ? 'Cita agendada correctamente.'
+        : 'Cita solicitada correctamente. Te notificaremos por correo cuando sea confirmada.';
+    showAppointmentMessage(okMsg, 'success');
+
+    // Notificación (simulada)
+    if (typeof sendConfirmationEmail === 'function' && notifyEmail) {
+        sendConfirmationEmail(notifyEmail, appointmentDateTime);
+    }
+
+    // Cerrar y refrescar
+    setTimeout(() => {
+        closeModal(appointmentModal);
+        submitBtn.innerHTML = originalTxt;
+        submitBtn.disabled = false;
+
+        if (userRole === 'admin') {
+            // Recarga la vista admin (todas las citas)
+            if (typeof loadAllAppointments === 'function') loadAllAppointments();
+        } else {
+            // Recarga la vista del paciente
+            if (typeof loadPatientAppointments === 'function') loadPatientAppointments();
+        }
+    }, 1200);
 }
 
 // Manejar envío de formulario de excepción
@@ -978,16 +1035,16 @@ function minutesToTime(minutes) {
 
 // ==== EmailJS: init correcto para emailjs-com@3 ====
 (function initEmailJS() {
-  try {
-    if (typeof emailjs === "undefined") {
-      console.error("[EmailJS] SDK no cargado. Revisa el <script> en index.html.");
-      return;
+    try {
+        if (typeof emailjs === "undefined") {
+            console.error("[EmailJS] SDK no cargado. Revisa el <script> en index.html.");
+            return;
+        }
+        emailjs.init("aE1WHrElpbOsKODgc"); // <- string, tal cual desde el Dashboard
+        console.log("[EmailJS] init OK", emailjs.version);
+    } catch (e) {
+        console.error("[EmailJS] init FAIL:", e);
     }
-    emailjs.init("aE1WHrElpbOsKODgc"); // <- string, tal cual desde el Dashboard
-    console.log("[EmailJS] init OK", emailjs.version);
-  } catch (e) {
-    console.error("[EmailJS] init FAIL:", e);
-  }
 })();
 
 async function sendConfirmationEmail(toEmail, appointmentDateTime) {
@@ -1167,10 +1224,10 @@ function filterAppointments(filter) {
 // Inicializar FAQ
 function initFAQ() {
     const faqItems = document.querySelectorAll('.faq-item');
-    
+
     faqItems.forEach(item => {
         const question = item.querySelector('.faq-question');
-        
+
         question.addEventListener('click', () => {
             // Cerrar otros items abiertos
             faqItems.forEach(otherItem => {
@@ -1178,7 +1235,7 @@ function initFAQ() {
                     otherItem.classList.remove('active');
                 }
             });
-            
+
             // Alternar el item actual
             item.classList.toggle('active');
         });
@@ -1195,42 +1252,42 @@ if (typeof window !== 'undefined') {
 
 // === Lazy-load del mapa en Contacto ===
 function initMapEmbed() {
-  const placeholder = document.querySelector('.map-embed');
-  if (!placeholder) return;
+    const placeholder = document.querySelector('.map-embed');
+    if (!placeholder) return;
 
-  const loadIframe = () => {
-    if (placeholder.dataset.loaded) return;
-    const src = placeholder.getAttribute('data-src');
-    if (!src) return;
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('src', src);
-    iframe.setAttribute('loading', 'lazy');
-    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-    iframe.setAttribute('aria-label', 'Mapa de ubicación');
-    placeholder.appendChild(iframe);
-    placeholder.dataset.loaded = 'true';
-  };
+    const loadIframe = () => {
+        if (placeholder.dataset.loaded) return;
+        const src = placeholder.getAttribute('data-src');
+        if (!src) return;
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('src', src);
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        iframe.setAttribute('aria-label', 'Mapa de ubicación');
+        placeholder.appendChild(iframe);
+        placeholder.dataset.loaded = 'true';
+    };
 
-  // Usa IntersectionObserver si está disponible
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) {
-          loadIframe();
-          io.disconnect();
-        }
-      });
-    }, { rootMargin: '200px' });
-    io.observe(placeholder);
-  } else {
-    // Fallback simple
-    loadIframe();
-  }
+    // Usa IntersectionObserver si está disponible
+    if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    loadIframe();
+                    io.disconnect();
+                }
+            });
+        }, { rootMargin: '200px' });
+        io.observe(placeholder);
+    } else {
+        // Fallback simple
+        loadIframe();
+    }
 }
 
 // Llama dentro de tu DOMContentLoaded existente
 document.addEventListener('DOMContentLoaded', () => {
-  initMapEmbed();
+    initMapEmbed();
 });
 
 // ===== Calendario de Reservas (Admin) =====
@@ -1239,172 +1296,213 @@ let calSelected = null;               // día seleccionado (Date)
 let monthAppointmentsMap = {};        // { 'YYYY-MM-DD': count }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializa calendario solo si está visible el admin
-  if (document.getElementById('appointmentsTab')) {
-    initCalendar();
-  }
+    // Inicializa calendario solo si está visible el admin
+    if (document.getElementById('appointmentsTab')) {
+        initCalendar();
+    }
 });
 
-function initCalendar(){
-  document.getElementById('calPrev')?.addEventListener('click', () => {
-    calCurrent.setMonth(calCurrent.getMonth() - 1);
-    renderCalendar();
-  });
-  document.getElementById('calNext')?.addEventListener('click', () => {
-    calCurrent.setMonth(calCurrent.getMonth() + 1);
-    renderCalendar();
-  });
-  // Valor inicial: hoy
-  calSelected = new Date();
-  setStartOfDay(calSelected);
-  renderCalendar().then(() => {
-    // Cargar reservas de hoy al abrir
-    loadAppointmentsByDay(calSelected);
-  });
+function initCalendar() {
+    document.getElementById('calPrev')?.addEventListener('click', () => {
+        calCurrent.setMonth(calCurrent.getMonth() - 1);
+        renderCalendar();
+    });
+    document.getElementById('calNext')?.addEventListener('click', () => {
+        calCurrent.setMonth(calCurrent.getMonth() + 1);
+        renderCalendar();
+    });
+    // Valor inicial: hoy
+    calSelected = new Date();
+    setStartOfDay(calSelected);
+    renderCalendar().then(() => {
+        // Cargar reservas de hoy al abrir
+        loadAppointmentsByDay(calSelected);
+    });
 }
 
-async function renderCalendar(){
-  const title = document.getElementById('calTitle');
-  const grid  = document.getElementById('calendarGrid');
-  if (!title || !grid) return;
+async function renderCalendar() {
+    const title = document.getElementById('calTitle');
+    const grid = document.getElementById('calendarGrid');
+    if (!title || !grid) return;
 
-  const year  = calCurrent.getFullYear();
-  const month = calCurrent.getMonth();
+    const year = calCurrent.getFullYear();
+    const month = calCurrent.getMonth();
 
-  const firstOfMonth = new Date(year, month, 1);
-  const lastOfMonth  = new Date(year, month + 1, 0);
+    const firstOfMonth = new Date(year, month, 1);
+    const lastOfMonth = new Date(year, month + 1, 0);
 
-  title.textContent = firstOfMonth.toLocaleString('es-CL', { month:'long', year:'numeric' });
+    title.textContent = firstOfMonth.toLocaleString('es-CL', { month: 'long', year: 'numeric' });
 
-  // Prefetch: mapa de cuentas por día del mes
-  monthAppointmentsMap = await fetchMonthCounts(firstOfMonth, lastOfMonth);
+    // Prefetch: mapa de cuentas por día del mes
+    monthAppointmentsMap = await fetchMonthCounts(firstOfMonth, lastOfMonth);
 
-  // Calcular desde qué lunes arranca la grilla (o lunes de la semana del 1)
-  const startOffset = ((firstOfMonth.getDay() + 6) % 7); // 0=Lunes, ..., 6=Domingo
-  const gridStart = new Date(firstOfMonth);
-  gridStart.setDate(firstOfMonth.getDate() - startOffset);
+    // Calcular desde qué lunes arranca la grilla (o lunes de la semana del 1)
+    const startOffset = ((firstOfMonth.getDay() + 6) % 7); // 0=Lunes, ..., 6=Domingo
+    const gridStart = new Date(firstOfMonth);
+    gridStart.setDate(firstOfMonth.getDate() - startOffset);
 
-  // 6 filas x 7 cols = 42 celdas
-  grid.innerHTML = '';
-  for (let i = 0; i < 42; i++){
-    const d = new Date(gridStart);
-    d.setDate(gridStart.getDate() + i);
-    const inMonth = d.getMonth() === month;
+    // 6 filas x 7 cols = 42 celdas
+    grid.innerHTML = '';
+    for (let i = 0; i < 42; i++) {
+        const d = new Date(gridStart);
+        d.setDate(gridStart.getDate() + i);
+        const inMonth = d.getMonth() === month;
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'calendar-day' + (inMonth ? '' : ' out');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'calendar-day' + (inMonth ? '' : ' out');
 
-    // marca hoy
-    const today = new Date(); setStartOfDay(today);
-    const dKey = toKey(d);
-    if (toKey(today) === dKey) btn.classList.add('today');
-    if (calSelected && toKey(calSelected) === dKey) btn.classList.add('selected');
+        // marca hoy
+        const today = new Date(); setStartOfDay(today);
+        const dKey = toKey(d);
+        if (toKey(today) === dKey) btn.classList.add('today');
+        if (calSelected && toKey(calSelected) === dKey) btn.classList.add('selected');
 
-    btn.textContent = d.getDate();
+        btn.textContent = d.getDate();
 
-    // badge de cantidad si hay
-    const count = monthAppointmentsMap[dKey] || 0;
-    if (count > 0){
-      const badge = document.createElement('span');
-      badge.className = 'count-badge';
-      badge.textContent = count;
-      btn.appendChild(badge);
+        // badge de cantidad si hay
+        const count = monthAppointmentsMap[dKey] || 0;
+        if (count > 0) {
+            const badge = document.createElement('span');
+            badge.className = 'count-badge';
+            badge.textContent = count;
+            btn.appendChild(badge);
+        }
+
+        // click: seleccionar y cargar
+        if (inMonth) {
+            btn.addEventListener('click', () => {
+                calSelected = new Date(d);
+                setStartOfDay(calSelected);
+                document.getElementById('calSelectedLabel').textContent =
+                    d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('calDayCount').textContent = `${monthAppointmentsMap[dKey] || 0} reservas`;
+
+                // refrescar selección visual
+                grid.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
+                btn.classList.add('selected');
+
+                loadAppointmentsByDay(d);
+            });
+        } else {
+            // días fuera de mes no seleccionables
+            btn.disabled = true;
+        }
+
+        grid.appendChild(btn);
     }
-
-    // click: seleccionar y cargar
-    if (inMonth){
-      btn.addEventListener('click', () => {
-        calSelected = new Date(d);
-        setStartOfDay(calSelected);
-        document.getElementById('calSelectedLabel').textContent =
-          d.toLocaleDateString('es-CL', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-        document.getElementById('calDayCount').textContent = `${monthAppointmentsMap[dKey] || 0} reservas`;
-
-        // refrescar selección visual
-        grid.querySelectorAll('.calendar-day').forEach(el => el.classList.remove('selected'));
-        btn.classList.add('selected');
-
-        loadAppointmentsByDay(d);
-      });
-    } else {
-      // días fuera de mes no seleccionables
-      btn.disabled = true;
-    }
-
-    grid.appendChild(btn);
-  }
 }
 
 // Trae todas las reservas del mes (sin canceladas) y genera {YYYY-MM-DD: count}
-async function fetchMonthCounts(firstOfMonth, lastOfMonth){
-  const start = new Date(firstOfMonth); setStartOfDay(start);
-  const end   = new Date(lastOfMonth);  end.setHours(23,59,59,999);
+async function fetchMonthCounts(firstOfMonth, lastOfMonth) {
+    const start = new Date(firstOfMonth); setStartOfDay(start);
+    const end = new Date(lastOfMonth); end.setHours(23, 59, 59, 999);
 
-  const { data, error } = await supabase
-    .from('appointments')
-    .select('appointment_date,status')
-    .gte('appointment_date', start.toISOString())
-    .lte('appointment_date', end.toISOString());
+    const { data, error } = await supabase
+        .from('appointments')
+        .select('appointment_date,status')
+        .gte('appointment_date', start.toISOString())
+        .lte('appointment_date', end.toISOString());
 
-  const map = {};
-  if (!error && Array.isArray(data)){
-    for (const a of data){
-      if (a.status === 'cancelled') continue;
-      const key = toKey(new Date(a.appointment_date));
-      map[key] = (map[key] || 0) + 1;
+    const map = {};
+    if (!error && Array.isArray(data)) {
+        for (const a of data) {
+            if (a.status === 'cancelled') continue;
+            const key = toKey(new Date(a.appointment_date));
+            map[key] = (map[key] || 0) + 1;
+        }
     }
-  }
-  return map;
+    return map;
 }
 
 // Carga SOLO las reservas del día seleccionado en la lista derecha
-async function loadAppointmentsByDay(dateObj){
-  const list = document.getElementById('adminAppointments');
-  if (!list) return;
+async function loadAppointmentsByDay(dateObj) {
+    const list = document.getElementById('adminAppointments');
+    if (!list) return;
 
-  list.innerHTML = `
+    list.innerHTML = `
     <div class="loading-state">
       <i class="fas fa-spinner fa-spin"></i>
       <p>Cargando reservas del día...</p>
     </div>`;
 
-  const start = new Date(dateObj); setStartOfDay(start);
-  const end   = new Date(dateObj); end.setHours(23,59,59,999);
+    const start = new Date(dateObj); setStartOfDay(start);
+    const end = new Date(dateObj); end.setHours(23, 59, 59, 999);
 
-  const { data, error } = await supabase
-    .from('appointments')
-    .select(`*, profiles:patient_id (name, email)`)
-    .gte('appointment_date', start.toISOString())
-    .lte('appointment_date', end.toISOString())
-    .order('appointment_date', { ascending: true });
+    const { data, error } = await supabase
+        .from('appointments')
+        .select(`*, profiles:patient_id (name, email)`)
+        .gte('appointment_date', start.toISOString())
+        .lte('appointment_date', end.toISOString())
+        .order('appointment_date', { ascending: true });
 
-  if (error){
-    console.error('Error al cargar reservas del día:', error);
-    list.innerHTML = '<p class="message error">Error al cargar las reservas del día.</p>';
-    return;
-  }
+    if (error) {
+        console.error('Error al cargar reservas del día:', error);
+        list.innerHTML = '<p class="message error">Error al cargar las reservas del día.</p>';
+        return;
+    }
 
-  // Actualiza el chip de cantidad
-  const key = toKey(start);
-  const count = (data || []).filter(a => a.status !== 'cancelled').length;
-  monthAppointmentsMap[key] = count;
-  const chip = document.getElementById('calDayCount');
-  if (chip) chip.textContent = `${count} reservas`;
+    // Actualiza el chip de cantidad
+    const key = toKey(start);
+    const count = (data || []).filter(a => a.status !== 'cancelled').length;
+    monthAppointmentsMap[key] = count;
+    const chip = document.getElementById('calDayCount');
+    if (chip) chip.textContent = `${count} reservas`;
 
-  list.innerHTML = '';
-  if (data.length === 0){
-    list.innerHTML = `
+    list.innerHTML = '';
+    if (data.length === 0) {
+        list.innerHTML = `
       <div class="empty-state">
         <i class="fas fa-calendar-check"></i>
         <h3>Sin reservas para este día</h3>
         <p>Las reservas aparecerán aquí</p>
       </div>`;
-    return;
-  }
-  data.forEach(ap => list.appendChild(createAppointmentCard(ap, true)));
+        return;
+    }
+    data.forEach(ap => list.appendChild(createAppointmentCard(ap, true)));
 }
 
 // Helpers de fecha
-function setStartOfDay(d){ d.setHours(0,0,0,0); }
-function toKey(d){ return d.toISOString().slice(0,10); } // YYYY-MM-DD
+function setStartOfDay(d) { d.setHours(0, 0, 0, 0); }
+function toKey(d) { return d.toISOString().slice(0, 10); } // YYYY-MM-DD
+
+// ==== Admin: cargar opciones de pacientes (solo role=patient) ====
+async function openAdminAppointmentFields() {
+  const grpPatient = document.getElementById('adminPatientGroup');
+  const grpStatus  = document.getElementById('adminStatusGroup');
+  const selPatient = document.getElementById('appointmentPatient');
+
+  if (userRole === 'admin') {
+    grpPatient?.classList.remove('hidden');
+    grpStatus?.classList.remove('hidden');
+
+    if (selPatient && selPatient.options.length <= 1) {
+      selPatient.innerHTML = '<option value="">Cargando pacientes...</option>';
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, role')
+        .eq('role', 'patient')               // 🔒 solo pacientes
+        .order('name', { ascending: true });
+
+      if (error) {
+        console.error('Error cargando pacientes:', error);
+        selPatient.innerHTML = '<option value="">Error al cargar</option>';
+        return;
+      }
+
+      selPatient.innerHTML = '<option value="">Selecciona un paciente...</option>';
+      (data || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        const name = (p.name || '').trim();
+        opt.textContent = name || 'Paciente sin nombre';
+        selPatient.appendChild(opt);
+      });
+    }
+  } else {
+    grpPatient?.classList.add('hidden');
+    grpStatus?.classList.add('hidden');
+  }
+}
+

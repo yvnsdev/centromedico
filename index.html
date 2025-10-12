@@ -529,7 +529,7 @@
                         <img src="assets/favicon.png" alt="Bienvenida paciente" loading="lazy">
                     </div>
                     <div class="welcome-actions">
-                        <button id="newAppointmentBtn" class="btn btn-primary">
+                        <button id="newAppointmentBtnPatient" class="btn btn-primary">
                             <i class="fas fa-plus-circle"></i> Solicitar Nueva Cita
                         </button>
                     </div>
@@ -581,6 +581,9 @@
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Buscar reservas...">
                     </div>
+                    <button id="newAppointmentBtnAdmin" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nueva cita
+                    </button>
                 </div>
             </div>
 
@@ -778,6 +781,25 @@
                 <span class="close">&times;</span>
             </div>
             <form id="appointmentForm">
+                <!-- Solo admin: seleccionar paciente -->
+                <div id="adminPatientGroup" class="form-group hidden">
+                    <label for="appointmentPatient"><i class="fas fa-user"></i> Paciente</label>
+                    <select id="appointmentPatient">
+                        <option value="">Selecciona un paciente...</option>
+                        <!-- opciones se cargan por JS -->
+                    </select>
+                </div>
+
+                <!-- Solo admin: estado de la cita -->
+                <div id="adminStatusGroup" class="form-group hidden">
+                    <label for="appointmentStatus"><i class="fas fa-flag"></i> Estado</label>
+                    <select id="appointmentStatus">
+                        <option value="pending" selected>Pendiente</option>
+                        <option value="confirmed">Confirmada</option>
+                        <option value="cancelled">Cancelada</option>
+                    </select>
+                </div>
+
                 <div class="form-group">
                     <label for="appointmentDate"><i class="fas fa-calendar-day"></i> Fecha:</label>
                     <input type="date" id="appointmentDate" required>
@@ -858,6 +880,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Botón flotante WhatsApp -->
+    <a id="whatsappFAB" class="fab-whatsapp"
+        href="https://wa.me/56942450414?text=Hola%20quisiera%20hacer%20una%20reserva" target="_blank" rel="noopener"
+        aria-label="Chatear por WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
 
     <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
     <script type="module" src="app.js"></script>
