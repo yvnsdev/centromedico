@@ -299,7 +299,7 @@ async function handleRegister(e) {
             await supabase
                 .from('profiles')
                 .insert([
-                    { id: data.user.id, name: name, role: 'patient', phone: phone }
+                    { id: data.user.id, name: name, role: 'patient', phone: phone, email: email }
                 ]);
         }
 
@@ -381,7 +381,7 @@ async function loadAllAppointments() {
         .from('appointments')
         .select(`
             *,
-            profiles:patient_id (name, email)
+            profiles:patient_id (name, email, phone)
         `)
         .order('appointment_date', { ascending: true });
 
@@ -412,23 +412,41 @@ async function loadAllAppointments() {
 
 // Crear tarjeta de cita
 function createAppointmentCard(appointment, isAdmin) {
-    const card = document.createElement('div');
-    card.className = 'appointment-card';
+  const card = document.createElement('div');
+  card.className = 'appointment-card';
 
-    const date = new Date(appointment.appointment_date);
-    const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const formattedTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(appointment.appointment_date);
+  const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const formattedTime = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-    let statusIcon = '';
-    if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
-    if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
-    if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
+  let statusIcon = '';
+  if (appointment.status === 'pending') statusIcon = '<i class="fas fa-clock"></i>';
+  if (appointment.status === 'confirmed') statusIcon = '<i class="fas fa-check-circle"></i>';
+  if (appointment.status === 'cancelled') statusIcon = '<i class="fas fa-times-circle"></i>';
 
-    const showConfirm = isAdmin && appointment.status !== 'confirmed';
+  const showConfirm = isAdmin && appointment.status !== 'confirmed';
 
-    card.innerHTML = `
+  // PERFIL (email / teléfono)
+  const p = appointment.profiles || {};
+  const hasEmail = typeof p.email === 'string' && p.email.trim().length > 0;
+  const hasPhone = p.phone !== null && p.phone !== undefined && /\d/.test(String(p.phone));
+
+  const emailHtml = hasEmail
+    ? `<span title="Correo"><i class="fas fa-envelope"></i> ${p.email.trim()}</span>`
+    : '';
+
+  const phoneHtml = hasPhone
+    ? `<span title="Teléfono"><i class="fas fa-phone"></i> ${formatPhone(String(p.phone))}</span>`
+    : '';
+
+  const contactHtml = (emailHtml || phoneHtml)
+    ? `<div class="patient-contact">${emailHtml}${emailHtml && phoneHtml ? '<span class="divider">·</span>' : ''}${phoneHtml}</div>`
+    : `<div class="patient-contact"><span>—</span></div>`;
+
+  card.innerHTML = `
     <div class="appointment-info">
-      <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? appointment.profiles.name : 'Nutricionista'}</h4>
+      <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? (p.name || 'Paciente') : 'Nutricionista'}</h4>
+      ${isAdmin ? contactHtml : ''}
       <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
       <p><i class="fas fa-clock"></i> ${formattedTime}</p>
       <p class="status-${appointment.status}">${statusIcon} Estado: ${getStatusText(appointment.status)}</p>
@@ -437,22 +455,32 @@ function createAppointmentCard(appointment, isAdmin) {
     <div class="appointment-actions">
       ${isAdmin ? `
         ${showConfirm ? `
-            <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
+          <button class="btn btn-primary" onclick="updateAppointmentStatus('${appointment.id}', 'confirmed')">
             <i style="color: white;" class="fas fa-check"></i> Confirmar
-            </button>` : ``}
+          </button>` : ``}
         <button class="btn btn-secondary" onclick="updateAppointmentStatus('${appointment.id}', 'cancelled')">
-            <i class="fas fa-times"></i> Cancelar
+          <i class="fas fa-times"></i> Cancelar
         </button>
-        ` : `
+      ` : `
         ${appointment.status !== 'cancelled' ? `
-            <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
+          <button class="btn btn-secondary" onclick="cancelAppointment('${appointment.id}')">
             <i class="fas fa-times"></i> Cancelar Cita
-            </button>` : ``}
-        `}
+          </button>` : ``}
+      `}
     </div>
   `;
+  return card;
+}
 
-    return card;
+function formatPhone(raw) {
+  const digits = String(raw).replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('56')) {
+    return `+${digits.slice(0,2)} ${digits.slice(2,3)} ${digits.slice(3,7)} ${digits.slice(7)}`;
+  }
+  if (digits.length === 9) {
+    return `${digits.slice(0,1)} ${digits.slice(1,5)} ${digits.slice(5)}`;
+  }
+  return raw;
 }
 
 // Cargar horario semanal
@@ -1468,41 +1496,41 @@ function toKey(d) { return d.toISOString().slice(0, 10); } // YYYY-MM-DD
 
 // ==== Admin: cargar opciones de pacientes (solo role=patient) ====
 async function openAdminAppointmentFields() {
-  const grpPatient = document.getElementById('adminPatientGroup');
-  const grpStatus  = document.getElementById('adminStatusGroup');
-  const selPatient = document.getElementById('appointmentPatient');
+    const grpPatient = document.getElementById('adminPatientGroup');
+    const grpStatus = document.getElementById('adminStatusGroup');
+    const selPatient = document.getElementById('appointmentPatient');
 
-  if (userRole === 'admin') {
-    grpPatient?.classList.remove('hidden');
-    grpStatus?.classList.remove('hidden');
+    if (userRole === 'admin') {
+        grpPatient?.classList.remove('hidden');
+        grpStatus?.classList.remove('hidden');
 
-    if (selPatient && selPatient.options.length <= 1) {
-      selPatient.innerHTML = '<option value="">Cargando pacientes...</option>';
+        if (selPatient && selPatient.options.length <= 1) {
+            selPatient.innerHTML = '<option value="">Cargando pacientes...</option>';
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, role')
-        .eq('role', 'patient')               // 🔒 solo pacientes
-        .order('name', { ascending: true });
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id, name, role')
+                .eq('role', 'patient')               // 🔒 solo pacientes
+                .order('name', { ascending: true });
 
-      if (error) {
-        console.error('Error cargando pacientes:', error);
-        selPatient.innerHTML = '<option value="">Error al cargar</option>';
-        return;
-      }
+            if (error) {
+                console.error('Error cargando pacientes:', error);
+                selPatient.innerHTML = '<option value="">Error al cargar</option>';
+                return;
+            }
 
-      selPatient.innerHTML = '<option value="">Selecciona un paciente...</option>';
-      (data || []).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        const name = (p.name || '').trim();
-        opt.textContent = name || 'Paciente sin nombre';
-        selPatient.appendChild(opt);
-      });
+            selPatient.innerHTML = '<option value="">Selecciona un paciente...</option>';
+            (data || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                const name = (p.name || '').trim();
+                opt.textContent = name || 'Paciente sin nombre';
+                selPatient.appendChild(opt);
+            });
+        }
+    } else {
+        grpPatient?.classList.add('hidden');
+        grpStatus?.classList.add('hidden');
     }
-  } else {
-    grpPatient?.classList.add('hidden');
-    grpStatus?.classList.add('hidden');
-  }
 }
 

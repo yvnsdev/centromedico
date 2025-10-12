@@ -2142,3 +2142,13 @@ svg.svg-inline--fa[data-icon="xmark"]{
 .fab-whatsapp i{
   line-height: 0;
 }
+
+.patient-contact {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 6px 0 10px;
+  color: var(--text-gray);
+}
+.patient-contact i { color: var(--primary-blue); }
+.patient-contact span { display: inline-flex; align-items: center; gap: 6px; }
