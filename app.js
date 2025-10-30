@@ -57,6 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthState();
     setupDateRestrictions();
     initFAQ();
+    // Inicializar galería de instalaciones
+    initFacilitiesGallery();
 });
 
 // Configuración de event listeners
@@ -168,6 +170,65 @@ function initResponsiveNav() {
 document.addEventListener('DOMContentLoaded', () => {
     initResponsiveNav();
 });
+
+/* ====== Galería de instalaciones ====== */
+function initFacilitiesGallery() {
+    // thumbnails son botones con clase .facility-thumb
+    const thumbs = Array.from(document.querySelectorAll('.facility-thumb'));
+    if (!thumbs.length) return;
+
+    // crear overlay (perezoso):
+    let overlay = null;
+
+    function createOverlay() {
+        overlay = document.createElement('div');
+        overlay.className = 'gallery-overlay';
+        overlay.tabIndex = -1;
+
+        const img = document.createElement('img');
+        img.alt = '';
+        overlay.appendChild(img);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        closeBtn.addEventListener('click', closeOverlay);
+        overlay.appendChild(closeBtn);
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeOverlay();
+        });
+
+        document.body.appendChild(overlay);
+    }
+
+    function openOverlay(src, alt) {
+        if (!overlay) createOverlay();
+        const img = overlay.querySelector('img');
+        img.src = src;
+        img.alt = alt || '';
+        overlay.style.display = 'flex';
+        // lock scroll
+        document.documentElement.style.overflow = 'hidden';
+        overlay.focus();
+    }
+
+    function closeOverlay() {
+        if (!overlay) return;
+        overlay.style.display = 'none';
+        document.documentElement.style.overflow = '';
+        const img = overlay.querySelector('img');
+        if (img) img.src = '';
+    }
+
+    thumbs.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const src = btn.dataset.src || btn.querySelector('img')?.src;
+            const alt = btn.querySelector('img')?.alt || '';
+            if (src) openOverlay(src, alt);
+        });
+    });
+}
 
 // Verificar estado de autenticación
 async function checkAuthState() {
