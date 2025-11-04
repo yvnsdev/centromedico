@@ -267,6 +267,18 @@ async function loadScheduleProfessionals() {
             opt.textContent = p.name || 'Profesional';
             sel.appendChild(opt);
         });
+        // Auto-cargar el horario cuando se selecciona otro profesional sin necesidad de pulsar "Cargar"
+        sel.addEventListener('change', () => {
+            const prof = sel.value || null;
+            // mostrar un indicador mientras carga
+            weeklySchedule.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando horarios...</p>
+                </div>
+            `;
+            loadWeeklySchedule(prof);
+        });
     } catch (e) {
         console.error('loadScheduleProfessionals fail', e);
     }
