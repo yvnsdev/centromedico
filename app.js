@@ -63,8 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroCarousel();
     // Setup botones de reservar en tarjetas de profesionales
     setupReserveButtons();
-    // Cargar profesionales para el formulario de cita
+    // Cargar profesionales para el formulario de cita y para la gestión de horarios
     loadProfessionals();
+    loadScheduleProfessionals();
+    // bind botones de schedule
+    document.getElementById('loadScheduleBtn')?.addEventListener('click', () => {
+        const prof = document.getElementById('scheduleProfessional').value || null;
+        loadWeeklySchedule(prof);
+    });
+    document.getElementById('saveScheduleBtn')?.addEventListener('click', () => {
+        const prof = document.getElementById('scheduleProfessional').value || null;
+        saveWeeklySchedule(prof);
+    });
 });
 
 // Carga lista de profesionales desde la tabla profiles (role = 'professional')
@@ -101,6 +111,164 @@ async function loadProfessionals() {
     } catch (e) {
         console.error('loadProfessionals fail', e);
         sel.innerHTML = '<option value="">Error</option>';
+    }
+}
+
+async function saveWeeklySchedule(professionalId = null) {
+    const weeklyEl = document.getElementById('weeklySchedule');
+    if (!weeklyEl) return;
+
+    const rows = [];
+    // selectors within weeklySchedule
+    const actives = weeklyEl.querySelectorAll('.day-active');
+    actives.forEach(chk => {
+        const day = parseInt(chk.dataset.day, 10);
+        const start = weeklyEl.querySelector(`.day-start[data-day="${day}"]`)?.value || null;
+        const end = weeklyEl.querySelector(`.day-end[data-day="${day}"]`)?.value || null;
+        const active = chk.checked;
+
+        const payload = {
+            day_of_week: day,
+            start_time: start,
+            end_time: end,
+            active: active
+        };
+        // sólo incluir professional_id si está definido y no es cadena vacía
+        if (professionalId !== null && professionalId !== undefined && professionalId !== '') {
+            payload.professional_id = professionalId;
+        }
+        rows.push(payload);
+    });
+
+    // IMPORTANT: Only upsert active days. Delete inactive days so DB doesn't keep entries marked as inactive.
+    const rowsToUpsert = rows.filter(r => r.active);
+    const daysToDelete = rows.filter(r => !r.active).map(r => r.day_of_week);
+
+    // Preparar target de onConflict según si es horario global o por profesional
+    let onConflict = ['professional_id', 'day_of_week'];
+    if (professionalId === null || professionalId === '' || professionalId === undefined) {
+        onConflict = ['day_of_week'];
+    }
+
+    // Supabase/PostgREST espera onConflict como cadena con columnas separadas por comas.
+    const onConflictParam = Array.isArray(onConflict) ? onConflict.join(',') : String(onConflict);
+
+    // Debug info
+    console.debug('saveWeeklySchedule:', { rowsCount: rows.length, rowsToUpsert, daysToDelete, onConflict: onConflictParam });
+
+    try {
+        // Primero eliminar días marcados como inactivos
+        if (daysToDelete.length > 0) {
+            let delInactive = supabase.from('business_hours').delete().in('day_of_week', daysToDelete);
+            if (professionalId !== null && professionalId !== undefined && professionalId !== '') {
+                delInactive = delInactive.eq('professional_id', professionalId);
+            } else {
+                delInactive = delInactive.is('professional_id', null);
+            }
+            const { error: delInactiveErr } = await delInactive;
+            if (delInactiveErr) {
+                console.error('Error al eliminar días inactivos:', delInactiveErr);
+                showConfirmation('Error al eliminar días inactivos', 'error');
+                return;
+            }
+        }
+
+        // Si no hay filas activas para insertar, terminamos
+        if (!rowsToUpsert || rowsToUpsert.length === 0) {
+            showConfirmation('Horario actualizado correctamente');
+            setTimeout(() => loadWeeklySchedule(professionalId), 800);
+            return;
+        }
+
+        // Upsert sólo con días activos
+        const { data: upsertData, error } = await supabase
+            .from('business_hours')
+            .upsert(rowsToUpsert, { onConflict: onConflictParam });
+
+        if (error) {
+            console.error('Error al guardar horarios (upsert):', error);
+
+            const isNoConflictConstraint = (error.code && String(error.code) === '42P10')
+                || (error.message && String(error.message).toLowerCase().includes('on conflict'))
+                || (error.details && String(error.details).toLowerCase().includes('on conflict'));
+
+            if (isNoConflictConstraint) {
+                // Fallback: borrar filas existentes para esos días activos y reinsertar
+                try {
+                    const days = rowsToUpsert.map(r => r.day_of_week);
+                    let delQuery2 = supabase.from('business_hours').delete().in('day_of_week', days);
+                    if (professionalId !== null && professionalId !== undefined && professionalId !== '') {
+                        delQuery2 = delQuery2.eq('professional_id', professionalId);
+                    } else {
+                        delQuery2 = delQuery2.is('professional_id', null);
+                    }
+                    const { error: delErr2 } = await delQuery2;
+                    if (delErr2) {
+                        console.error('Error al eliminar filas antes de reinsertar (fallback):', delErr2);
+                        showConfirmation('Error al guardar horarios (delete fallback falló)', 'error');
+                        return;
+                    }
+
+                    // Reinsertar filas nuevas (sólo activas)
+                    const { data: insertData, error: insertErr } = await supabase
+                        .from('business_hours')
+                        .insert(rowsToUpsert);
+
+                    if (insertErr) {
+                        console.error('Error al insertar horarios en fallback:', insertErr);
+                        showConfirmation(insertErr.message || 'Error al guardar horarios (insert fallback)', 'error');
+                        return;
+                    }
+
+                    showConfirmation('Horario guardado correctamente (fallback)');
+                    setTimeout(() => loadWeeklySchedule(professionalId), 800);
+                    return;
+                } catch (e) {
+                    console.error('Fallback saveWeeklySchedule failed', e);
+                    showConfirmation('Error al guardar horarios', 'error');
+                    return;
+                }
+            }
+
+            const msg = error?.message || 'Error al guardar horarios';
+            showConfirmation(msg, 'error');
+            return;
+        }
+
+        showConfirmation('Horario guardado correctamente');
+        // recargar
+        setTimeout(() => loadWeeklySchedule(professionalId), 800);
+    } catch (e) {
+        // Capturar cualquier excepción inesperada (por ejemplo problemas de red)
+        console.error('saveWeeklySchedule exception:', e);
+        showConfirmation('Error al guardar horarios (excepción)', 'error');
+    }
+}
+
+// Cargar profesionales para la sección de horario (incluye opción por defecto)
+async function loadScheduleProfessionals() {
+    const sel = document.getElementById('scheduleProfessional');
+    if (!sel) return;
+    // limpiar excepto la opción por defecto
+    sel.innerHTML = '<option value="">Horario por defecto (general)</option>';
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .eq('role', 'professional')
+            .order('name', { ascending: true });
+        if (error) {
+            console.error('Error cargando profesionales para schedule:', error);
+            return;
+        }
+        (data || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name || 'Profesional';
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('loadScheduleProfessionals fail', e);
     }
 }
 
@@ -204,6 +372,19 @@ function initEventListeners() {
 
     // Cambio de fecha en formulario de cita
     appointmentDate.addEventListener('change', loadAvailableTimes);
+
+    // Cambio de profesional en formulario de cita: recargar horarios sin cerrar el modal
+    const appointmentProfessionalSel = document.getElementById('appointmentProfessional');
+    if (appointmentProfessionalSel) {
+        appointmentProfessionalSel.addEventListener('change', () => {
+            // mostrar estado de carga inmediato
+            if (appointmentTime) appointmentTime.innerHTML = '<option value="">Cargando horarios disponibles...</option>';
+            // recargar horarios si ya hay fecha seleccionada
+            if (appointmentDate && appointmentDate.value) {
+                loadAvailableTimes();
+            }
+        });
+    }
 
     // Confirmación modal
     confirmationOk.addEventListener('click', () => closeModal(confirmationModal));
@@ -764,10 +945,17 @@ async function loadWeeklySchedule() {
         </div>
     `;
 
-    const { data, error } = await supabase
-        .from('business_hours')
-        .select('*')
-        .order('day_of_week');
+    // si se pasa professionalId, filtrar por professional_id; si es null -> global (professional_id IS NULL)
+    const professionalId = arguments.length ? arguments[0] : null;
+
+    let query = supabase.from('business_hours').select('*').order('day_of_week');
+    if (professionalId) {
+        query = query.eq('professional_id', professionalId);
+    } else {
+        query = query.is('professional_id', null);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
         console.error('Error al cargar horario:', error);
@@ -777,34 +965,33 @@ async function loadWeeklySchedule() {
 
     weeklySchedule.innerHTML = '';
 
-    const days = [
-        'Domingo', 'Lunes', 'Martes', 'Miércoles',
-        'Jueves', 'Viernes', 'Sábado'
-    ];
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    // crear un mapa por día
+    const map = {};
+    (data || []).forEach(d => { map[d.day_of_week] = d; });
 
     days.forEach((day, index) => {
-        const daySchedule = data.find(schedule => schedule.day_of_week === index);
+        const daySchedule = map[index];
 
         const dayCard = document.createElement('div');
         dayCard.className = 'day-schedule';
 
-        // Icono según si está activo o no
-        const statusIcon = daySchedule && daySchedule.active ?
-            '<i class="fas fa-check-circle" style="color: var(--primary-blue);"></i>' :
-            '<i class="fas fa-times-circle" style="color: var(--primary-blue);"></i>';
+        const active = daySchedule ? Boolean(daySchedule.active) : false;
+        const start = daySchedule ? (daySchedule.start_time || '09:00') : '09:00';
+        const end = daySchedule ? (daySchedule.end_time || '18:00') : '18:00';
 
         dayCard.innerHTML = `
             <div class="day-info">
                 <h4>${day}</h4>
-                <p>${daySchedule && daySchedule.active ?
-                `Horario: ${formatTime(daySchedule.start_time)} - ${formatTime(daySchedule.end_time)}` :
-                'Sin atención'}</p>
-            </div>
-            <div class="day-actions">
-                <span>${statusIcon}</span>
-                <button class="btn btn-primary" onclick="editDaySchedule(${index})">
-                    <i class="fas fa-edit"></i> Editar
-                </button>
+                <div class="day-edit">
+                    <label><input type="checkbox" class="day-active" data-day="${index}" ${active ? 'checked' : ''}> Atención</label>
+                    <div class="time-inputs">
+                        <input type="time" class="day-start" data-day="${index}" value="${start}">
+                        <span class="time-separator">a</span>
+                        <input type="time" class="day-end" data-day="${index}" value="${end}">
+                    </div>
+                </div>
             </div>
         `;
 
@@ -1114,13 +1301,33 @@ async function loadAvailableTimes() {
 
     let businessHours = null;
     if (professionalId) {
+        // Comprobar si el profesional tiene horarios definidos en la tabla
+        try {
+            const { data: profAny, error: profAnyErr } = await supabase
+                .from('business_hours')
+                .select('id')
+                .eq('professional_id', professionalId)
+                .limit(1);
+
+            if (profAnyErr) {
+                console.warn('No se pudo comprobar si el profesional tiene horarios:', profAnyErr);
+            } else if (!profAny || profAny.length === 0) {
+                // Si el profesional no tiene NINGÚN horario definido, no mostramos fallback global —
+                // consideramos que no hay atención para ese profesional hasta que se le configure.
+                appointmentTime.innerHTML = '<option value="">Este profesional no tiene horario definido</option>';
+                return;
+            }
+        } catch (e) {
+            console.warn('Error comprobando horarios del profesional:', e);
+        }
+
         const { data: bh, error: bhErr } = await supabase
             .from('business_hours')
             .select('*')
             .eq('day_of_week', dayOfWeek)
             .eq('professional_id', professionalId)
             .eq('active', true)
-            .single();
+            .maybeSingle();
         if (!bhErr && bh) businessHours = bh;
     }
 
@@ -1131,7 +1338,7 @@ async function loadAvailableTimes() {
             .select('*')
             .eq('day_of_week', dayOfWeek)
             .eq('active', true)
-            .single();
+            .maybeSingle();
         businessHours = bh2;
     }
 
