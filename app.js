@@ -267,6 +267,17 @@ async function loadScheduleProfessionals() {
             opt.textContent = p.name || 'Profesional';
             sel.appendChild(opt);
         });
+        // También poblar selector de excepciones si existe
+        const excSel = document.getElementById('exceptionProfessional');
+        if (excSel) {
+            // dejar la primera opción por defecto
+            (data || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name || 'Profesional';
+                excSel.appendChild(opt);
+            });
+        }
         // Auto-cargar el horario cuando se selecciona otro profesional sin necesidad de pulsar "Cargar"
         sel.addEventListener('change', () => {
             const prof = sel.value || null;
@@ -278,6 +289,8 @@ async function loadScheduleProfessionals() {
                 </div>
             `;
             loadWeeklySchedule(prof);
+            // también recargar excepciones para el profesional seleccionado
+            loadExceptions();
         });
     } catch (e) {
         console.error('loadScheduleProfessionals fail', e);
@@ -1058,10 +1071,64 @@ async function loadExceptions() {
         </div>
     `;
 
-    const { data, error } = await supabase
-        .from('schedule_exceptions')
-        .select('*')
-        .order('exception_date', { ascending: true });
+    // Si existe un selector de professional en el DOM (admin), usar su valor para filtrar excepciones
+    const selScheduleProf = document.getElementById('scheduleProfessional');
+    const selExceptionProf = document.getElementById('exceptionProfessional');
+    let professionalId = null;
+    if (selExceptionProf && selExceptionProf.value !== undefined) {
+        professionalId = selExceptionProf.value || null;
+    } else if (selScheduleProf && selScheduleProf.value !== undefined) {
+        professionalId = selScheduleProf.value || null;
+    }
+
+    // Intentar primero traer la relación del profesional (requiere FK entre schedule_exceptions.professional_id -> profiles.id)
+    // Si PostgREST devuelve PGRST200 (no encuentra la relación), hacemos fallback a una consulta simple.
+    let data = null;
+    let error = null;
+
+    try {
+        let qRel = supabase.from('schedule_exceptions')
+            .select('*, professional:professional_id(id, name)')
+            .order('exception_date', { ascending: true });
+        // Admin should see all exceptions by default. If a specific professional is chosen, filter by it.
+        if (userRole === 'admin') {
+            if (professionalId) qRel = qRel.eq('professional_id', professionalId);
+            // else no filter => return all
+        } else {
+            if (professionalId) qRel = qRel.eq('professional_id', professionalId);
+            else qRel = qRel.is('professional_id', null);
+        }
+
+        const relRes = await qRel;
+        data = relRes.data;
+        error = relRes.error;
+    } catch (e) {
+        // En raros casos la librería puede lanzar; lo manejamos abajo
+        console.warn('loadExceptions relation query threw:', e);
+        error = e;
+    }
+
+    // Si la consulta con relación devolvió el error PGRST200 o indica que falta la relación, hacer fallback
+    const relationMissing = error && (String(error.code) === 'PGRST200' || (error.message && String(error.message).toLowerCase().includes('could not find a relationship')));
+    if (relationMissing) {
+        console.warn('PostgREST relationship missing for schedule_exceptions.professional_id — falling back to simple select');
+        try {
+                let qSimple = supabase.from('schedule_exceptions').select('*').order('exception_date', { ascending: true });
+                if (userRole === 'admin') {
+                    if (professionalId) qSimple = qSimple.eq('professional_id', professionalId);
+                    // else no filter => all
+                } else {
+                    if (professionalId) qSimple = qSimple.eq('professional_id', professionalId);
+                    else qSimple = qSimple.is('professional_id', null);
+                }
+            const simpleRes = await qSimple;
+            data = simpleRes.data;
+            error = simpleRes.error;
+        } catch (e) {
+            console.error('Fallback loadExceptions simple query threw:', e);
+            error = e;
+        }
+    }
 
     if (error) {
         console.error('Error al cargar excepciones:', error);
@@ -1103,6 +1170,7 @@ async function loadExceptions() {
             <div class="exception-info">
                 <h4>${typeIcon} ${formattedDate}</h4>
                 <p><i class="fas fa-comment"></i> ${exception.reason}</p>
+                ${exception.professional ? `<p><i class="fas fa-user-md"></i> Profesional: ${exception.professional.name}</p>` : ''}
                 <p>${exception.exception_type === 'closed' ?
                 '<i class="fas fa-times"></i> Día sin atención' :
                 `<i class="fas fa-clock"></i> Horario modificado: ${formatTime(exception.start_time)} - ${formatTime(exception.end_time)}`}</p>
@@ -1257,18 +1325,26 @@ async function handleExceptionSubmit(e) {
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Agregando excepción...';
     submitBtn.disabled = true;
+    // Determinar professional_id (desde el modal o desde la selección del admin)
+    const excSel = document.getElementById('exceptionProfessional');
+    const scheduleSel = document.getElementById('scheduleProfessional');
+    let professionalToUse = null;
+    if (excSel && excSel.value) professionalToUse = excSel.value;
+    else if (scheduleSel && scheduleSel.value) professionalToUse = scheduleSel.value;
+
+    // Preparar payload incluyendo professional_id si corresponde
+    const payload = {
+        exception_date: date,
+        exception_type: type,
+        reason: reason,
+        start_time: startTime,
+        end_time: endTime
+    };
+    if (professionalToUse) payload.professional_id = professionalToUse;
 
     const { error } = await supabase
         .from('schedule_exceptions')
-        .insert([
-            {
-                exception_date: date,
-                exception_type: type,
-                reason: reason,
-                start_time: startTime,
-                end_time: endTime
-            }
-        ]);
+        .insert([payload]);
 
     if (error) {
         console.error('Error al crear excepción:', error);
