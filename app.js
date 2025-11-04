@@ -63,7 +63,63 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroCarousel();
     // Setup botones de reservar en tarjetas de profesionales
     setupReserveButtons();
+    // Cargar profesionales para el formulario de cita
+    loadProfessionals();
 });
+
+// Carga lista de profesionales desde la tabla profiles (role = 'professional')
+async function loadProfessionals() {
+    const sel = document.getElementById('appointmentProfessional');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Cargando profesionales...</option>';
+
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .eq('role', 'professional')
+            .order('name', { ascending: true });
+
+        if (error) {
+            console.error('Error cargando profesionales:', error);
+            sel.innerHTML = '<option value="">Error al cargar</option>';
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            sel.innerHTML = '<option value="">No hay profesionales disponibles</option>';
+            return;
+        }
+
+        sel.innerHTML = '<option value="">Selecciona un profesional...</option>';
+        (data || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.name || 'Profesional';
+            sel.appendChild(opt);
+        });
+    } catch (e) {
+        console.error('loadProfessionals fail', e);
+        sel.innerHTML = '<option value="">Error</option>';
+    }
+}
+
+// Intenta seleccionar un profesional por su nombre (caso cuando pulsas reservar desde la tarjeta)
+function selectProfessionalByName(name) {
+    if (!name) return false;
+    const sel = document.getElementById('appointmentProfessional');
+    if (!sel) return false;
+    for (let i = 0; i < sel.options.length; i++) {
+        const opt = sel.options[i];
+        if (opt.textContent.trim().toLowerCase() === name.trim().toLowerCase()) {
+            sel.value = opt.value;
+            // disparar evento change para que cargue horarios si corresponde
+            sel.dispatchEvent(new Event('change'));
+            return true;
+        }
+    }
+    return false;
+}
 
 // Vincula botones .reserve-btn para abrir el modal de cita y prellenar una pista en las notas
 function setupReserveButtons() {
@@ -86,6 +142,8 @@ function setupReserveButtons() {
                 // también prellenamos notas si queremos (no hacemos value para no sobrescribir)
             }
             openModal(appointmentModal);
+            // intentar seleccionar el profesional en el select por nombre
+            setTimeout(() => { selectProfessionalByName(prof); }, 200);
             // si es admin, cargar selects cuando corresponda
             if (userRole === 'admin') setTimeout(openAdminAppointmentFields, 0);
         });
@@ -448,6 +506,23 @@ async function handleLogin(e) {
         await getUserRole();
         closeAllModals();
         showUserView();
+
+        // Si veníamos de pulsar "Reservar" antes de loguearnos, abrir modal de cita y preseleccionar
+        try {
+            const after = localStorage.getItem('afterLoginReserveProfessional');
+            if (after) {
+                // abrir modal de cita
+                openModal(appointmentModal);
+                // prellenar placeholder
+                const notesEl = document.getElementById('appointmentNotes');
+                if (notesEl) notesEl.placeholder = after ? `Reservar con ${after} — indica motivo o preferencia` : notesEl.placeholder;
+                // intentar seleccionar profesional por nombre (puede que loadProfessionals ya haya corrido)
+                setTimeout(() => { selectProfessionalByName(after); }, 300);
+                localStorage.removeItem('afterLoginReserveProfessional');
+            }
+        } catch (e) {
+            console.warn('afterLoginReserveProfessional handling failed', e);
+        }
     }
 }
 
@@ -523,7 +598,7 @@ async function loadPatientAppointments() {
 
     const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select(`*, professional:professional_id (id, name, email)`) 
         .eq('patient_id', currentUser.id)
         .order('appointment_date', { ascending: true });
 
@@ -574,7 +649,8 @@ async function loadAllAppointments() {
         .from('appointments')
         .select(`
             *,
-            profiles:patient_id (name, email, phone)
+            profiles:patient_id (name, email, phone),
+            professional:professional_id (id, name, email)
         `)
         .order('appointment_date', { ascending: true });
 
@@ -636,15 +712,17 @@ function createAppointmentCard(appointment, isAdmin) {
     ? `<div class="patient-contact">${emailHtml}${emailHtml && phoneHtml ? '<span class="divider">·</span>' : ''}${phoneHtml}</div>`
     : `<div class="patient-contact"><span>—</span></div>`;
 
-  card.innerHTML = `
-    <div class="appointment-info">
-      <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? (p.name || 'Paciente') : 'Nutricionista'}</h4>
-      ${isAdmin ? contactHtml : ''}
-      <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
-      <p><i class="fas fa-clock"></i> ${formattedTime}</p>
-      <p class="status-${appointment.status}">${statusIcon} Estado: ${getStatusText(appointment.status)}</p>
-      ${appointment.notes ? `<p><i class="fas fa-sticky-note"></i> ${appointment.notes}</p>` : ''}
-    </div>
+    const prof = appointment.professional || {};
+
+    card.innerHTML = `
+        <div class="appointment-info">
+            <h4><i class="fas fa-user"></i> Cita con ${isAdmin ? (p.name || 'Paciente') : (prof.name || 'Nutricionista')}</h4>
+            ${isAdmin ? `<div class="appointment-meta">${contactHtml}<p><strong>Profesional:</strong> ${prof.name || '—'}</p></div>` : ''}
+            <p><i class="fas fa-calendar-day"></i> ${formattedDate}</p>
+            <p><i class="fas fa-clock"></i> ${formattedTime}</p>
+            <p class="status-${appointment.status}">${statusIcon} Estado: ${getStatusText(appointment.status)}</p>
+            ${appointment.notes ? `<p><i class="fas fa-sticky-note"></i> ${appointment.notes}</p>` : ''}
+        </div>
     <div class="appointment-actions">
       ${isAdmin ? `
         ${showConfirm ? `
@@ -866,10 +944,12 @@ async function handleAppointmentSubmit(e) {
     // --- Admin: tomar paciente y estado desde los selects ---
     const selPatient = document.getElementById('appointmentPatient'); // <select>
     const selStatus = document.getElementById('appointmentStatus');  // <select>
+    const selProfessional = document.getElementById('appointmentProfessional'); // <select>
 
     let patientIdToUse = currentUser.id;     // por defecto, el propio paciente
     let statusToUse = 'pending';
     let notifyEmail = currentUser.email;  // para el aviso
+    let professionalIdToUse = selProfessional && selProfessional.value ? selProfessional.value : null;
 
     if (userRole === 'admin') {
         // Validar paciente seleccionado
@@ -881,6 +961,15 @@ async function handleAppointmentSubmit(e) {
         }
         patientIdToUse = selPatient.value;
         statusToUse = (selStatus && selStatus.value) ? selStatus.value : 'pending';
+
+        // validar profesional seleccionado
+        if (!selProfessional || !selProfessional.value) {
+            showAppointmentMessage('Selecciona un profesional para la cita.', 'error');
+            submitBtn.innerHTML = originalTxt;
+            submitBtn.disabled = false;
+            return;
+        }
+        professionalIdToUse = selProfessional.value;
 
         // (Opcional) obtener email del paciente para el aviso
         try {
@@ -896,14 +985,17 @@ async function handleAppointmentSubmit(e) {
     }
 
     // Insertar cita
+    const insertPayload = {
+        patient_id: patientIdToUse,
+        appointment_date: appointmentDateTime.toISOString(),
+        notes: notes,
+        status: statusToUse,
+    };
+    if (professionalIdToUse) insertPayload.professional_id = professionalIdToUse;
+
     const { error } = await supabase
         .from('appointments')
-        .insert([{
-            patient_id: patientIdToUse,
-            appointment_date: appointmentDateTime.toISOString(),
-            notes: notes,
-            status: statusToUse
-        }]);
+        .insert([insertPayload]);
 
     if (error) {
         console.error('Error al crear cita:', error);
@@ -1016,12 +1108,32 @@ async function loadAvailableTimes() {
     const selectedDate = new Date(date);
     const dayOfWeek = selectedDate.getDay();
 
-    const { data: businessHours } = await supabase
-        .from('business_hours')
-        .select('*')
-        .eq('day_of_week', dayOfWeek)
-        .eq('active', true)
-        .single();
+    // Si el usuario seleccionó un profesional, intentar usar su horario específico.
+    const selProfessional = document.getElementById('appointmentProfessional');
+    const professionalId = selProfessional && selProfessional.value ? selProfessional.value : null;
+
+    let businessHours = null;
+    if (professionalId) {
+        const { data: bh, error: bhErr } = await supabase
+            .from('business_hours')
+            .select('*')
+            .eq('day_of_week', dayOfWeek)
+            .eq('professional_id', professionalId)
+            .eq('active', true)
+            .single();
+        if (!bhErr && bh) businessHours = bh;
+    }
+
+    // fallback a horario global si no hay horario por profesional
+    if (!businessHours) {
+        const { data: bh2 } = await supabase
+            .from('business_hours')
+            .select('*')
+            .eq('day_of_week', dayOfWeek)
+            .eq('active', true)
+            .single();
+        businessHours = bh2;
+    }
 
     if (!businessHours) {
         appointmentTime.innerHTML = '<option value="">No hay horarios disponibles este día</option>';
@@ -1041,12 +1153,14 @@ async function loadAvailableTimes() {
     const endOfDay = new Date(date);
     endOfDay.setHours(23, 59, 59, 999);
 
-    const { data: existingAppointments } = await supabase
+    let q = supabase
         .from('appointments')
         .select('appointment_date')
         .gte('appointment_date', startOfDay.toISOString())
         .lte('appointment_date', endOfDay.toISOString())
         .neq('status', 'cancelled');
+    if (professionalId) q = q.eq('professional_id', professionalId);
+    const { data: existingAppointments } = await q;
 
     // Generar horarios disponibles
     appointmentTime.innerHTML = '';
@@ -1652,7 +1766,7 @@ async function loadAppointmentsByDay(dateObj) {
 
     const { data, error } = await supabase
         .from('appointments')
-        .select(`*, profiles:patient_id (name, email)`)
+        .select(`*, profiles:patient_id (name, email), professional:professional_id (id, name, email)`) 
         .gte('appointment_date', start.toISOString())
         .lte('appointment_date', end.toISOString())
         .order('appointment_date', { ascending: true });
