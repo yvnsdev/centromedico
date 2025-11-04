@@ -1572,6 +1572,43 @@ async function deleteException(exceptionId) {
 function openModal(modal) {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+
+    // Al abrir ciertos modales, recargar los datos necesarios para que siempre muestren información actualizada
+    try {
+        if (!modal) return;
+        const id = modal.id || '';
+
+        if (id === 'appointmentModal') {
+            // Asegurar que el selector de profesionales esté poblado
+            loadProfessionals();
+            // Limpiar mensajes previos
+            const apMsg = document.getElementById('appointmentMessage');
+            if (apMsg) { apMsg.textContent = ''; apMsg.className = 'message'; }
+            // Si ya hay fecha seleccionada, cargar horarios inmediatamente
+            if (appointmentDate && appointmentDate.value) {
+                loadAvailableTimes();
+            } else if (appointmentTime) {
+                appointmentTime.innerHTML = '<option value="">Selecciona una fecha primero</option>';
+            }
+        }
+
+        if (id === 'exceptionModal') {
+            // Poblar selector de profesionales y cargar excepciones actuales
+            loadScheduleProfessionals();
+            // Preseleccionar el profesional del admin si está en el contexto
+            setTimeout(() => {
+                const exc = document.getElementById('exceptionProfessional');
+                const sch = document.getElementById('scheduleProfessional');
+                if (exc && sch && sch.value) exc.value = sch.value;
+                loadExceptions();
+            }, 150);
+            // Limpiar mensajes previos
+            const exMsg = document.getElementById('exceptionMessage');
+            if (exMsg) { exMsg.textContent = ''; exMsg.className = 'message'; }
+        }
+    } catch (e) {
+        console.warn('openModal preload hooks failed', e);
+    }
 }
 
 function closeModal(modal) {
@@ -1597,6 +1634,26 @@ function switchTab(tabName) {
         content.classList.remove('active');
     });
     document.getElementById(`${tabName}Tab`).classList.add('active');
+
+    // Cargar datos relevantes al cambiar de tab para que la vista admin esté siempre actualizada
+    try {
+        if (tabName === 'appointments') {
+            if (typeof loadAllAppointments === 'function') loadAllAppointments();
+        }
+        if (tabName === 'schedule') {
+            // cargar listado de profesionales y el horario seleccionado
+            loadScheduleProfessionals();
+            const prof = document.getElementById('scheduleProfessional')?.value || null;
+            loadWeeklySchedule(prof);
+            loadSessionDuration();
+        }
+        if (tabName === 'exceptions') {
+            loadScheduleProfessionals();
+            loadExceptions();
+        }
+    } catch (e) {
+        console.warn('switchTab hooks failed', e);
+    }
 }
 
 function toggleModifiedHours() {
