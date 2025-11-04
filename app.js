@@ -59,7 +59,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initFAQ();
     // Inicializar galería de instalaciones
     initFacilitiesGallery();
+    // Inicializar carrusel del hero (fondo)
+    initHeroCarousel();
+    // Setup botones de reservar en tarjetas de profesionales
+    setupReserveButtons();
 });
+
+// Vincula botones .reserve-btn para abrir el modal de cita y prellenar una pista en las notas
+function setupReserveButtons() {
+    document.querySelectorAll('.reserve-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const prof = btn.dataset.professional || '';
+
+            // Si el usuario NO está autenticado, redirigimos al modal de login
+            if (!currentUser) {
+                // Opcional: podemos dejar una pista a mostrar después del login en localStorage
+                try { localStorage.setItem('afterLoginReserveProfessional', prof); } catch (e) { /* ignore */ }
+                openModal(loginModal);
+                return;
+            }
+
+            // Si está autenticado, abrir el modal de cita como antes
+            const notesEl = document.getElementById('appointmentNotes');
+            if (notesEl) {
+                notesEl.placeholder = prof ? `Reservar con ${prof} — indica motivo o preferencia` : '';
+                // también prellenamos notas si queremos (no hacemos value para no sobrescribir)
+            }
+            openModal(appointmentModal);
+            // si es admin, cargar selects cuando corresponda
+            if (userRole === 'admin') setTimeout(openAdminAppointmentFields, 0);
+        });
+    });
+}
 
 // Configuración de event listeners
 function initEventListeners() {
@@ -228,6 +259,107 @@ function initFacilitiesGallery() {
             if (src) openOverlay(src, alt);
         });
     });
+}
+
+/* ====== Hero background carousel ======
+   Usa dos capas (.hero-bg-a y .hero-bg-b) para crossfade de background-image.
+   Requiere en el DOM: #heroSection, #heroSlides (oculto con <img> tags), #heroPrev, #heroNext, #heroIndicators
+*/
+function initHeroCarousel() {
+    try {
+        const hero = document.getElementById('heroSection');
+        if (!hero) return;
+
+        const slidesEl = document.getElementById('heroSlides');
+        const bgA = hero.querySelector('.hero-bg-a');
+        const bgB = hero.querySelector('.hero-bg-b');
+        const prevBtn = document.getElementById('heroPrev');
+        const nextBtn = document.getElementById('heroNext');
+        const indicators = document.getElementById('heroIndicators');
+
+        const imgs = slidesEl ? Array.from(slidesEl.querySelectorAll('img')).map(i => i.getAttribute('src')).filter(Boolean) : [];
+        if (!imgs.length) return; // nada que mostrar
+
+        // precarga
+        imgs.forEach(s => { const i = new Image(); i.src = s; });
+
+        // estado
+        let current = 0;
+        let showingA = true;
+        const intervalMs = 6000;
+        let timer = null;
+
+        function setBg(el, url) {
+            if (!el) return;
+            el.style.backgroundImage = `url('${url}')`;
+        }
+
+        // iniciar capas
+        setBg(bgA, imgs[0]);
+        bgA.style.opacity = 1;
+        bgB.style.opacity = 0;
+
+        // indicadores
+        if (indicators) {
+            indicators.innerHTML = '';
+            imgs.forEach((_, idx) => {
+                const dot = document.createElement('button');
+                dot.type = 'button';
+                dot.className = 'hero-dot' + (idx === 0 ? ' active' : '');
+                dot.setAttribute('aria-label', `Ir a la imagen ${idx + 1}`);
+                dot.addEventListener('click', () => goTo(idx));
+                indicators.appendChild(dot);
+            });
+        }
+
+        function updateDots() {
+            if (!indicators) return;
+            Array.from(indicators.children).forEach((d, i) => d.classList.toggle('active', i === current));
+        }
+
+        function crossfade(nextIndex) {
+            if (nextIndex === current) return;
+            const nextUrl = imgs[nextIndex];
+            const show = showingA ? bgB : bgA;
+            const hide = showingA ? bgA : bgB;
+            setBg(show, nextUrl);
+            // forzar reflow no necesario; CSS transition en opacity se encargará
+            show.style.opacity = 1;
+            hide.style.opacity = 0;
+            showingA = !showingA;
+            current = nextIndex;
+            updateDots();
+        }
+
+        function next() { crossfade((current + 1) % imgs.length); }
+        function prev() { crossfade((current - 1 + imgs.length) % imgs.length); }
+        function goTo(i) { crossfade(i); resetTimer(); }
+
+        function startTimer() { timer = setInterval(next, intervalMs); }
+        function stopTimer() { if (timer) clearInterval(timer); timer = null; }
+        function resetTimer() { stopTimer(); startTimer(); }
+
+        // controles
+        if (prevBtn) prevBtn.addEventListener('click', () => { prev(); resetTimer(); });
+        if (nextBtn) nextBtn.addEventListener('click', () => { next(); resetTimer(); });
+
+        // pausa al hover / foco
+        hero.addEventListener('mouseenter', stopTimer);
+        hero.addEventListener('mouseleave', startTimer);
+        hero.addEventListener('focusin', stopTimer);
+        hero.addEventListener('focusout', startTimer);
+
+        // teclado
+        hero.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') { prev(); resetTimer(); }
+            if (e.key === 'ArrowRight') { next(); resetTimer(); }
+        });
+
+        // arrancar
+        startTimer();
+    } catch (err) {
+        console.error('initHeroCarousel error', err);
+    }
 }
 
 // Verificar estado de autenticación

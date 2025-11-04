@@ -64,7 +64,21 @@
     <!-- Vista para usuarios no autenticados -->
     <main id="publicView">
         <!-- Sección Hero -->
-        <section class="hero full-width">
+        <section class="hero full-width" id="heroSection" tabindex="0">
+            <!-- capas de fondo para el carrusel (se controlan desde JS) -->
+            <div class="hero-bg hero-bg-a" aria-hidden="true"></div>
+            <div class="hero-bg hero-bg-b" aria-hidden="true"></div>
+
+            <!-- Lista de imágenes (oculta) -->
+            <div id="heroSlides" class="hero-slides" style="display:none">
+                <!-- Reemplaza con tus imágenes reales dentro de assets/ -->
+                <img src="assets/centro1.jpg" alt="">
+                <img src="assets/centro2.jpg" alt="">
+                <img src="assets/centro3.jpg" alt="">
+                <img src="assets/centro4.jpg" alt="">
+                <img src="assets/centro5.jpg" alt="">
+            </div>
+
             <div class="container">
                 <div class="hero-content">
                     <div class="hero-icon">
@@ -94,158 +108,90 @@
                         <p>Atención personalizada con nutricionistas certificados</p>
                     </div>
                 </div>
+
+                <!-- Controles e indicadores del carrusel -->
+                <button id="heroPrev" class="hero-control hero-control--prev" aria-label="Imagen anterior">
+                    <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <button id="heroNext" class="hero-control hero-control--next" aria-label="Siguiente imagen">
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
+                <div id="heroIndicators" class="hero-indicators" aria-hidden="false"></div>
             </div>
         </section>
 
-        <!-- Sección Quiénes Somos -->
+        <!-- Sección Quiénes Somos (Equipo) -->
         <section class="section full-width" id="about">
             <div class="container">
                 <div class="section-header">
-                    <h2><i class="fas fa-users"></i> Quiénes Somos</h2>
-                    <p>Conoce más sobre nuestro equipo y nuestra misión</p>
-                </div>
-                <div class="about-content">
-                    <div class="about-text">
-                        <p>Soy <strong>Bárbara San Martín</strong>, nutricionista titulada de la
-                            <strong>Universidad del Bío-Bío (UBB)</strong>, con formación complementaria en
-                            <strong>diplomado en Emprendimiento y Liderazgo</strong>. Mi vocación es ayudar a las
-                            personas a mejorar su bienestar y calidad de vida mediante una alimentación saludable,
-                            consciente y sostenible.
-                        </p>
-
-                        <p>Mi enfoque se basa en la atención personalizada, considerando las metas, necesidades y
-                            condiciones de salud de cada paciente. Busco generar un acompañamiento cercano y
-                            profesional que permita alcanzar cambios reales y duraderos.</p>
-
-                        <ul class="about-features">
-                            <li><i class="fas fa-check-circle"></i> Nutricionista titulada UBB</li>
-                            <li><i class="fas fa-check-circle"></i> Diplomado en Emprendimiento y Liderazgo</li>
-                            <li><i class="fas fa-check-circle"></i> Experiencia en atención personalizada</li>
-                            <li><i class="fas fa-check-circle"></i> Acompañamiento cercano y profesional</li>
-                        </ul>
-                    </div>
-                    <div class="about-image">
-                        <img class="about-photo" src="assets/nutricionista.png"
-                            alt="Equipo de Carpediem atendiendo pacientes" loading="lazy" />
-                    </div>
-                </div>
-            </div>
-        </section>
-
-
-        <!-- Sección Nuestras Instalaciones -->
-        <section class="section full-width" id="facilities">
-            <div class="container">
-                <div class="section-header">
-                    <h2><i class="fas fa-building"></i> Nuestras Instalaciones</h2>
-                    <p>Conoce el box de atención y la sala de espera donde recibirás atención profesional y confortable.</p>
+                    <h2><i class="fas fa-users"></i> Nuestro Equipo</h2>
+                    <p>Conoce a los profesionales que te acompañarán en tu proceso de salud</p>
                 </div>
 
-                <div class="facilities-grid">
-                    <div class="facility-card">
-                        <button class="facility-thumb" data-src="assets/box1.jpg" aria-label="Ver Box 1">
-                            <img src="assets/20251020_143506.jpg" alt="Box de atención 1" loading="lazy">
-                        </button>
-                        <h4>Box de Atención 1</h4>
-                        <p>Espacio privado y equipado para consultas presenciales.</p>
+                <!-- Grid de profesionales -->
+                <div class="team-grid">
+                    <div class="pro-card">
+                        <img class="pro-photo" src="assets/barbara-final.png" alt="Bárbara San Martín" loading="lazy">
+                        <div class="pro-body">
+                            <h3>Bárbara San Martín</h3>
+                            <p class="pro-title">Nutricionismo</p>
+                            <ul class="pro-services">
+                                <li>Control y seguimiento de Peso</li>
+                                <li>Nutrición Clínica Especializada</li>
+                                <li>Consultas de Seguimiento</li>
+                            </ul>
+                            <button class="btn btn-primary reserve-btn" data-professional="Bárbara San Martín">
+                                <i class="fas fa-calendar-plus"></i> Reservar Cita
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="facility-card">
-                        <button class="facility-thumb" data-src="assets/sala1.jpg" aria-label="Ver Sala de espera">
-                            <img src="assets/20251020_150601.jpg" alt="Sala de espera" loading="lazy">
-                        </button>
-                        <h4>Sala de Espera</h4>
-                        <p>Área cómoda y acogedora para pacientes y familiares.</p>
+                    <div class="pro-card">
+                        <img class="pro-photo" src="assets/angela-final.png" alt="Angela Meza" loading="lazy">
+                        <div class="pro-body">
+                            <h3>Angela Meza</h3>
+                            <p class="pro-title">Ginecologia</p>
+                            <ul class="pro-services">
+                                <li>Control y Anticonceptivos</li>
+                                <li>Lactancia Materna</li>
+                                <li>Orientación y Consejería ITS</li>
+                            </ul>
+                            <button class="btn btn-primary reserve-btn" data-professional="Angela Meza">
+                                <i class="fas fa-calendar-plus"></i> Reservar Cita
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="facility-card">
-                        <button class="facility-thumb" data-src="assets/box2.jpg" aria-label="Ver Box 2">
-                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ56BJbCnXj6v1Qpdk-kY7g4XUCpEypi0lECg&s" alt="Box de atención 2" loading="lazy">
-                        </button>
-                        <h4>Cómoda Ubicación</h4>
-                        <p>Ubicados en un lugar con fácil acceso y estacionamiento.</p>
+                    <div class="pro-card">
+                        <img class="pro-photo" src="assets/nancy-final.png" alt="Nancy Nina" loading="lazy">
+                        <div class="pro-body">
+                            <h3>Nancy Nina</h3>
+                            <p class="pro-title">Medicina General</p>
+                            <ul class="pro-services">
+                                <li>Atención Médica Integral</li>
+                                <li>Control de Enfermedades Crónicas</li>
+                                <li>Chequeos Generales</li>
+                            </ul>
+                            <button class="btn btn-primary reserve-btn" data-professional="Nancy Nina">
+                                <i class="fas fa-calendar-plus"></i> Reservar Cita
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </section>
 
-        <!-- Sección Servicios -->
-        <section class="section full-width bg-light" id="services">
-            <div class="container">
-                <div class="section-header">
-                    <h2><i class="fas fa-concierge-bell"></i> Nuestros Servicios</h2>
-                    <p>Descubre todos los servicios que ofrecemos para tu bienestar</p>
-                </div>
-                <div class="services-grid">
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://selecciones.com.mx/wp-content/uploads/2017/01/controla-tu-peso.jpg"
-                                alt="Control de peso" loading="lazy">
+                    <div class="pro-card">
+                        <img class="pro-photo" src="assets/fernanda-final.png" alt="Fernanda Torres" loading="lazy">
+                        <div class="pro-body">
+                            <h3>Fernanda Torres</h3>
+                            <p class="pro-title">Fonoaudiología</p>
+                            <ul class="pro-services">
+                                <li>Perfeccionamiento Vocal</li>
+                                <li>Trastornos del Lenguaje</li>
+                                <li>Patologias especializadas</li>
+                            </ul>
+                            <button class="btn btn-primary reserve-btn" data-professional="Fernanda Torres">
+                                <i class="fas fa-calendar-plus"></i> Reservar Cita
+                            </button>
                         </div>
-                        <div class="service-icon">
-                            <i class="fas fa-weight"></i>
-                        </div>
-                        <h3>Control de Peso</h3>
-                        <p>Plan nutricional personalizado para alcanzar y mantener tu peso ideal de forma saludable.</p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://institutodesaludhepatica.com/img/nutricion-header-bg.png"
-                                alt="Nutrición clínica" loading="lazy">
-                        </div>
-                        <div class="service-icon">
-                            <i class="fas fa-heart"></i>
-                        </div>
-                        <h3>Nutrición Clínica</h3>
-                        <p>Asesoramiento nutricional para enfermedades como diabetes, hipertensión y problemas
-                            digestivos.
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://ienutricion.com/wp-content/uploads/deportiva.jpg"
-                                alt="Nutrición deportiva" loading="lazy">
-                        </div>
-                        <div class="service-icon">
-                            <i class="fas fa-running"></i>
-                        </div>
-                        <h3>Nutrición Deportiva</h3>
-                        <p>Optimiza tu rendimiento deportivo con planes alimenticios específicos para tu actividad.</p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://labuenanutricion.com/wp-content/uploads/2021/11/dia-de-la-pediatria.jpg"
-                                alt="Nutrición pediátrica" loading="lazy">
-                        </div>
-                        <div class="service-icon">
-                            <i class="fas fa-baby"></i>
-                        </div>
-                        <h3>Nutrición Pediátrica</h3>
-                        <p>Alimentación saludable para niños y adolescentes, promoviendo hábitos desde temprana edad.
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://www.unileverfoodsolutions.com.mx/tendencias/hellmanns/ensaladas/tips-saludables/jcr:content/parsys/set1/row2/span12/image_1233504963.img.jpg/1651683219513.jpg"
-                                alt="Planificación de menús" loading="lazy">
-                        </div>
-                        <div class="service-icon">
-                            <i class="fas fa-utensils"></i>
-                        </div>
-                        <h3>Planificación de Menús</h3>
-                        <p>Te ayudamos a organizar tus comidas semanales con recetas saludables y fáciles de preparar.
-                        </p>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-image">
-                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfxYKP7yFoh_q-amGjT18PT7-GWGKPnRtR9Q&s"
-                                alt="Consultas de seguimiento" loading="lazy">
-                        </div>
-                        <div class="service-icon">
-                            <i class="fas fa-stethoscope"></i>
-                        </div>
-                        <h3>Consultas de Seguimiento</h3>
-                        <p>Acompañamiento continuo para evaluar tu progreso y ajustar tu plan según sea necesario.</p>
                     </div>
                 </div>
             </div>
